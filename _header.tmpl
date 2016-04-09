@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="<TMPL_VAR langcode ESCAPE=HTML DEFAULT=en>">
+<html lang="[% langcode || "en"%]">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<link rel="icon" href="<TMPL_VAR sitepath ESCAPE=HTML>favicon.ico" type="image/x-icon" />
-<link href="<TMPL_VAR sitepath ESCAPE=HTML>css/style.css" rel="stylesheet" type="text/css"/>
-<title><TMPL_VAR NAME=title ESCAPE=HTML></title>
+<link rel="icon" href="[% sitepath %]favicon.ico" type="image/x-icon" />
+<link href="[% sitepath %]css/style.css" rel="stylesheet" type="text/css"/>
+<title>[% FILTER htmlencode %][% title %][%END%]</title>
 </head>
 <body>
+<nav class="navbar navbar-default navbar-static-top">
 <div class="container">
-<h1><TMPL_VAR NAME=title ESCAPE=HTML></h1>
+<ul class="nav navbar-nav">
+[% FOREACH menuitem IN mainmenu%]
+<li[% IF menuitem.active %] class="active"[% END %]><a href="[% menuitem.url %]">[% FILTER htmlencode %][% menuitem.name %][%END%]</a></li>
+[% END %]
+</ul>
+</div class="container">
+</nav>
+<div class="container">
+<h1>[% FILTER htmlencode %][% title %][%END%]</h1>
