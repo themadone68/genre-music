@@ -1,0 +1,21 @@
+<form class="form-horizontal" method="POST" action="[% IF user %][% user.url %][% ELSE %][% sitepath %]users/[%END%]">
+[% IF user %]
+<div class="form-group">
+<label for="username" class="col-sm-2 control-label">Username</label>
+<div class="col-sm-10"><input type="text" class="form-control" id="username" name="username" placeholder="" value="[% IF user.is_temporary %][% FILTER htmlencode %][% user.id %][%END%][%END%]"/></div>
+</div>
+[% END %]
+<div class="form-group">
+<label for="name" class="col-sm-2 control-label">Name</label>
+<div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="" value="[% user.name %]"/></div>
+</div>
+<div class="form-group">
+<label for="email" class="col-sm-2 control-label">Email</label>
+<div class="col-sm-10"><input type="email" class="form-control" id="email" name="email" placeholder="" value="[% user.email %]"/></div>
+</div>
+<div class="form-group">
+<div class="col-sm-offset-2 col-sm-10">
+<button type="submit" class="btn btn-default">[% IF user %]Update Account[% ELSE %]Send Invite[% END %]</button>
+</div>
+</div>
+</form>

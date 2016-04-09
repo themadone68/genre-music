@@ -1,3 +1,10 @@
-<TMPL_INCLUDE _header.tmpl>
+[% INCLUDE _header.tmpl %]
 <p>Here are a list of songs</p>
-<TMPL_INCLUDE _footer.tmpl>
+
+<table>
+[% FOREACH song IN songs %]
+<tr><td><a href="[% song.url %]">[% FILTER htmlencode %][% song.name %][%END%]</a></td></tr>
+[% END %]
+</table>
+
+[% INCLUDE _footer.tmpl %]
