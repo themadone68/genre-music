@@ -1,1 +1,14 @@
 @import "bootstrap";
+
+@media (max-width: $screen-sm-min)
+  {
+  .nav > li
+    {
+    width: 50%;
+    float: left;
+    }
+  .nav > li:nth-of-type(even)
+    {
+    text-align: right;
+    }
+  }
