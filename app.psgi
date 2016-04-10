@@ -9,11 +9,14 @@ use Digest::MD5 qw(md5_hex);
 use GenreMusicDB::Base;
 use GenreMusicDB::Song;
 use GenreMusicDB::User;
+use GenreMusicDB::Album;
+use GenreMusicDB::Artist;
+use GenreMusicDB::Tag;
 
 sub homepage
 	{
 	my $env=shift;
-	return load_template($env,200,"homepage","Genre Music Database",
+	return load_template($env,200,"html","homepage","Genre Music Database",
 		{mainmenu => build_mainmenu($env)});
 	}
 
@@ -23,8 +26,13 @@ sub login
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
 		my ($olduser)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDBUser=([^;]+)/);
-		return load_template($env,200,"login","Login",
-			{mainmenu => build_mainmenu($env),username => ($olduser ? $olduser : "")});
+		my $destination=$env->{"REQUEST_URI"};
+		if($destination =~ m%/login.html$%)
+			{
+			$destination="";
+			}
+		return load_template($env,200,"html","login","Login",
+			{mainmenu => build_mainmenu($env),destination => $destination,username => ($olduser ? $olduser : "")});
 		}
 	else
 		{
@@ -53,8 +61,22 @@ sub login
 							{
 							push @cookies,'Set-Cookie' => "GenreMusicDBUser=".$row->[0]."; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60*365));
 							}
+						my $destination=$query->{"destination"};
+						if($destination =~ m%^$sitepath%)
+							{
+							$destination="http://".$env->{"HTTP_HOST"}.$destination;
+							}
+						else
+							{
+							$destination="";
+							}
+							
+						if($destination eq "")
+							{
+							$destination="http://".$env->{"HTTP_HOST"}.$sitepath;
+							}
 						return [ 302, [
-							'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath,
+							'Location' => $destination,
 							@cookies,
 							],[] ];
 						}
@@ -187,12 +209,24 @@ my $app = sub
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/invite_sent.html$% )
 		{
-		return load_template($env,200,"invite_sent","Invitation Sent",
+		return load_template($env,200,"html","invite_sent","Invitation Sent",
 			{mainmenu => build_mainmenu($env)});
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/songs/?%)
 		{
 		return GenreMusicDB::Song->handle($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/albums/?%)
+		{
+		return GenreMusicDB::Album->handle($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/artists/?%)
+		{
+		return GenreMusicDB::Artist->handle($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/tags/?%)
+		{
+		return GenreMusicDB::Tag->handle($env);
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/users/?%)
 		{
