@@ -18,6 +18,18 @@ sub new
 	return $self;
 	}
 
+sub id
+	{
+	my $self=shift;
+	return $self->{"id"};
+	}
+
+sub email
+	{
+	my $self=shift;
+	return $self->{"email"};
+	}
+
 sub handle
 	{
 	my $self=shift;
@@ -39,13 +51,20 @@ sub handle
 				$sth->finish;
 				}
 	
-			return load_template($env,200,"user_index","List of Users",
+			return load_template($env,200,"html","user_index","List of Users",
 				{mainmenu => build_mainmenu($env),users => \@users});
 			}
-		elsif($env->{"PATH_INFO"} =~ m%^/users/new.html?$%)
+		elsif($env->{"PATH_INFO"} =~ m%^/users/new.html$%)
 			{
-			return load_template($env,200,"new_user","Invite a Friend",
-				{mainmenu => build_mainmenu($env)});
+			if($env->{"REMOTE_USER"})
+				{
+				return load_template($env,200,"html","new_user","Invite a Friend",
+					{mainmenu => build_mainmenu($env)});
+				}
+			else
+				{
+				return error401($env);
+				}
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/users/(.*?)(\.html)?$%)
 			{
@@ -70,11 +89,11 @@ sub handle
 				{
 				my $req = Plack::Request->new($env);
 				my $query=$req->parameters;
-				if($query->{"edit"})
+				if(($query->{"edit"})&&($env->{"REMOTE_USER"}))
 					{
 					if($user->{"id"} eq $env->{"REMOTE_USER"})
 						{
-						return load_template($env,200,"edit_user","Edit ".$user->{"name"},
+						return load_template($env,200,"html","edit_user",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user});
 						}
 					else
@@ -82,9 +101,13 @@ sub handle
 						return error403($env);
 						}
 					}
+				elsif($query->{"edit"})
+					{
+					return error401($env);
+					}
 				else
 					{
-					return load_template($env,200,"user",$user->{"name"},
+					return load_template($env,200,"html","user",$user->{"name"},
 						{mainmenu => build_mainmenu($env),user => $user});
 					}
 				}
@@ -103,40 +126,92 @@ sub handle
 		my $req = Plack::Request->new($env);
 		my $query=$req->parameters;
 		my $dbh=open_database();
+		my $user;
+
+		if($env->{"PATH_INFO"} =~ m%^/users/((new|index).html)?$%)
+			{
+			$user=GenreMusicDB::User->new();
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/users/(.*?)(\.html)?$%)
+			{
+			my $userid=$1;
+			my ($sth,$row);
+			if($userid eq "me")
+				{
+				$userid=$env->{"REMOTE_USER"};
+				}
+			$sth=$dbh->prepare("SELECT * FROM users WHERE userid LIKE ".$dbh->quote($userid));
+			if(($sth)&&($sth->execute))
+				{
+				if($row=$sth->fetch)
+					{
+					$user=GenreMusicDB::User->new(@{$row});
+					}
+				$sth->finish;
+				}
+			}
+
 		if($query->{"delete"})
 			{
 			}
 		else
 			{
-			my $user;
-			if($query->{"userid"})
-				{
-				my ($sth,$row);
-				$sth=$dbh->prepare("SELECT * FROM users WHERE userid=".$dbh->quote($query->{"userid"}));
-				if(($sth)&&($sth->execute))
-					{
-					if($row=$sth->fetch)
-						{
-						$user=GenreMusicDB::User->new(@{$row});
-						}
-					$sth->finish;
-					}
-				}
-			else
-				{
-				$user=GenreMusicDB::User->new();
-				}
 			if(!$user)
 				{
+				log_error("No user to update?");
 				return error500($env);
 				}
 			else
 				{
 				my $ok=$dbh->do("BEGIN");
-				if($user->{"id"})
+				if($user->id)
 					{
-					$ok=$dbh->do("UPDATE users SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
-						("name","email"))." WHERE userid=".$dbh->quote($query->{"userid"})) if($ok);
+					my @validfields;
+					my @errors;
+					if($user->is_temporary)
+						{
+						if($query->{"userid"} =~ /^[a-zA-Z0-9_-]+$/)
+							{
+							push @validfields,"userid";
+							}
+						else
+							{
+							push @errors,"userid";
+							}
+						}
+					if($query->{"email"} ne $user->email)
+						{
+						if($query->{"email"} =~ /^[a-zA-Z0-9._-]+\@[.a-zA-Z0-9_-]+[a-zA-Z]$/)
+							{
+							push @validfields,"userid";
+							}
+						else
+							{
+							push @errors,"email";
+							}
+						}
+					if($query->{"name"} ne "")
+						{
+						push @validfields,"name";
+						}
+					else
+						{
+						push @errors,"name";
+						}
+					
+					if($#errors==-1)
+						{
+						$ok=$dbh->do("UPDATE users SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
+							@validfields)." WHERE userid=".$dbh->quote($user->id)) if($ok);
+						}
+					else
+						{
+						$dbh->do("ROLLBACK");
+						return load_template($env,200,"html","edit_user",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
+							{mainmenu => build_mainmenu($env),user => $user,errors => \@errors});
+						
+						exit;
+						}
 
 					if($ok)
 						{
@@ -189,17 +264,19 @@ sub handle
 							{
 							"sitepath" => $sitepath,
 							"curruser" => $env->{"REMOTE_USER"} || "",
-							"siteurl" => "http".($env->{"SERVER_PORT"}==443 ? "s" : "")."://".$env->{"HTTP_HOST"}.($env->{"SCRIPT_NAME"}|| "/")."?utm_medium=email&utm_source=body&utm_campaign=invite",
+							"siteurl" => "http".($env->{"SERVER_PORT"}==443 ? "s" : "")."://".$env->{"HTTP_HOST"}.($env->{"SCRIPT_NAME"}|| "/"),
+							"utm_medium" => "email",
+							"utm_campaign" => "invite",
 							"otheruser" => $otheruser,
 							"password" => $newpassword,
 							};
-						if(($template->process("email_invite_text.tmpl",$vars,\$text))&&
-							($template->process("email_invite_html.tmpl",$vars,\$html)))
+						if(($template->process("templates/text/email_invite.tmpl",$vars,\$text))&&
+							($template->process("templates/html/email_invite.tmpl",$vars,\$html)))
 							{
 							if(open(MAIL,"|/usr/lib/sendmail -t -f postmaster\@thingsilove.org.uk"))
 								{
 								my $mimemail = MIME::Entity->build(Type => "multipart/alternative",
-									From => "Chris <chris\@instituteofcorrection.org.uk>",
+									From => "I Need To Config This <chris\@instituteofcorrection.org.uk>",
 									To => $query->{"name"}." <".$query->{"email"}.">",
 									Subject => "Invitation to the Genre Music Database");
 								$mimemail->attach(Type => "text/plain",
@@ -221,12 +298,14 @@ sub handle
 							}
 						else
 							{
+							log_error("Template fail");
 							$dbh->do("ROLLBACK");
 							return error500($env);
 							}
 						}
 					else
 						{
+						log_error($DBI::errstr);
 						$dbh->do("ROLLBACK");
 						return error500($env);
 						}
@@ -239,13 +318,20 @@ sub handle
 sub url
 	{
 	my $self=shift;
-	return "${sitepath}users/".cgiencode($self->{"id"}).".html";
+	if(!$self->is_temporary)
+		{
+		return "${sitepath}users/".cgiencode($self->{"id"}).".html";
+		}
+	else
+		{
+		return "${sitepath}users/me.html";
+		}
 	}
 
 sub editurl
 	{
 	my $self=shift;
-	if($self->{"id"} !~ /^temp:/)
+	if(!$self->is_temporary)
 		{
 		return "${sitepath}users/".cgiencode($self->{"id"}).".html?edit=1";
 		}
@@ -276,7 +362,14 @@ sub find
 
 sub is_temporary
 	{
-	my $self;
-	return ($self->{"id"} =~ /^temp:/);
+	my $self=shift;
+	if ($self->{"id"} =~ /^temp:/)
+		{
+		return 1;
+		}
+	else
+		{
+		return 0;
+		}
 	}
 1;
