@@ -21,7 +21,7 @@ CREATE TRIGGER users_userid_upd AFTER UPDATE OF userid ON users
     UPDATE artists SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE songs SET moderatedby=new.userid WHERE moderatedby=old.userid;
     UPDATE albums SET moderatedby=new.userid WHERE moderatedby=old.userid;
-    UPDATE artist SET moderatedby=new.userid WHERE moderatedby=old.userid;
+    UPDATE artists SET moderatedby=new.userid WHERE moderatedby=old.userid;
     UPDATE song_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE album_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE artist_tags SET addedby=new.userid WHERE addedby=old.userid;
