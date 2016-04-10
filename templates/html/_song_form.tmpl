@@ -1,0 +1,104 @@
+<script><!--
+function add_new_row(elem)
+  {
+  var this_id;
+  this_id=parseInt(elem.name.match(/^artist_name-([0-9]+)/)[1]);
+  console.log(elem.name+' '+this_id);
+  if(document.forms['editsong'].elements['artist_name-'+this_id].value!='')
+    {
+    document.forms['editsong'].elements['artist_name-'+this_id].onchange=undefined;
+    var next_id=this_id+1;
+    $(elem).parent().parent().parent().after('[% INCLUDE _song_artist_rel.tmpl count="\'+next_id+\'"%]');
+    document.forms['editsong'].elements['artist_name-'+next_id].focus();
+    }
+  }
+
+function block_tab(elem,e)
+  {
+  var keyCode = ('which' in event) ? event.which : event.keyCode;
+  if((keyCode==9)&&(elem.value!=''))
+    {
+    e.preventDefault();
+    add_new_row(elem);
+    }
+  }
+//--></script>
+<form id="editsong" class="form-horizontal" method="POST" action="[% IF song %][% song.url %][% ELSE %][% sitepath %]songs/[%END%]">
+[% IF song %]<input type="hidden" name="songid" value="[% song.id %]"/>[% END %]
+<div class="form-group">
+<label for="name" class="col-sm-2 control-label">Name</label>
+<div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="Name of the song" value="[% FILTER htmlencode %][% song.name %][% END %]"/></div>
+</div>
+<div class="form-group">
+<label for="description" class="col-sm-2 control-label">Description</label>
+<div class="col-sm-10"><textarea class="form-control" id="description" name="description" rows="5">[% FILTER htmlencode %][% song.description %][% END %]</textarea/></div>
+</div>
+<div class="form-group">
+<label class="col-sm-2 control-label">Tags</label>
+<div class="col-sm-10">
+<select id="tags" type="text" class="form-control" name="tags" multiple="1">
+[% FOREACH tag IN tags %]
+<option[% IF song.has_tag(tag) %] selected="1"[% END %] value="[%FILTER htmlencode%][% tag.name %][%END%]">[%FILTER htmlencode%][% tag.name %][%END%]</option>
+[% END %]
+</select>
+<noscript><input type="text" class="form-control" name="tags" value=""/></noscript>
+<script>$('#tags').combomultibox({autocreate: 1});</script>
+</div>
+</div>
+
+<div class="form-group">
+<label class="col-sm-2 control-label">Albums</label>
+<div class="col-sm-10">
+<select id="albums" type="text" class="form-control" name="albums" multiple="1">
+[% FOREACH album IN albums %]
+<option[% IF song.belongs_to_album(album) %] selected="1"[% END %] value="albumid:[%FILTER htmlencode%][% album.id %][%END%]">[%FILTER htmlencode%][% album.name %][%END%]</option>
+[% END %]
+</select>
+<noscript><input type="text" class="form-control" name="album_name" value=""/></noscript>
+<script>$('#albums').combomultibox({autocreate: 1});</script>
+</div>
+</div>
+
+<div class="form-group">
+<label class="col-sm-2 control-label">Artists</label>
+<div class="col-sm-10">
+[% SET count=0 %]
+[% FOREACH artist IN song.artists %]
+[% INCLUDE _song_artist_rel.tmpl %]
+[% SET count=count+1 %]
+[% END %]
+[% SET artist={} %]
+[% INCLUDE _song_artist_rel.tmpl %]
+<script>
+var artists=[];
+console.log('getting artists');
+$.ajax({
+  type: 'GET',
+  url: "[%sitepath%]artists/index.json",
+  dataType: 'json',
+  success: function(json)
+    {
+    artists=$.map(json,function(item) { return { value: item.name, id: item.id }; });
+    $('.artist_name').autocomplete(
+      {
+      source: artists,
+      select: function(event,ui)
+        {
+        var aid=this.name.replace('artist_name','artist_id');
+        $("#"+aid)[0].value=ui.item.id;
+        console.log($("#"+aid));
+        console.log($("#"+aid)[0].value);
+        },
+      });
+    },
+  });
+</script>
+</div>
+</div>
+
+<div class="form-group">
+<div class="col-sm-offset-2 col-sm-10">
+<button type="submit" class="btn btn-default">[% IF song %]Save Song[% ELSE %]Add Song[% END %]</button>
+</div>
+</div>
+</form>
