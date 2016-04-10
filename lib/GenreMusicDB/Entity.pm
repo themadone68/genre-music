@@ -17,4 +17,38 @@ sub new
 	return $self;
 	}
 
+sub has_tag
+	{
+	my $self=shift;
+	my $tag=shift;
+	if(ref($tag) eq "GenreMusicDB::Tag")
+		{
+		$tag=$tag->name;
+		}
+	if(!defined($self->{"tags"}))
+		{
+		$self->tags();
+		}
+	log_error($tag." ".$self->{"tags"}->{lc($tag)});
+	return defined($self->{"tags"}->{lc($tag)});
+	}
+
+sub id
+	{
+	my $self=shift;
+	return $self->{"id"};
+	}
+
+sub name
+	{
+	my $self=shift;
+	return $self->{"name"};
+	}
+
+sub description
+	{
+	my $self=shift;
+	return $self->{"description"};
+	}
+
 1;
