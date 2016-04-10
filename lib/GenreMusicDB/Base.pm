@@ -8,7 +8,6 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error);
 our $sitepath;
 our $filepath;
-our $env;
 my $dbh;
 
 sub open_database
