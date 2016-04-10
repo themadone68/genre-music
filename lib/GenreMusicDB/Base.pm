@@ -5,9 +5,10 @@ use Apache::DBI;
 use Template;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(open_database load_template build_mainmenu error403 error404 error500 $sitepath $filepath htmlencode cgiencode);
+our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error);
 our $sitepath;
 our $filepath;
+our $env;
 my $dbh;
 
 sub open_database
@@ -23,11 +24,13 @@ sub load_template
 	{
 	my $env=shift;
 	my $status=shift;
+	my $format=shift || "html";
 	my $name=shift;
 	my $title=shift;
+	my $contenttype;
 	my $template = Template->new(
 		{
-		INCLUDE_PATH => $filepath,
+		INCLUDE_PATH => $filepath."templates/$format",
 		FILTERS =>
 			{
 			"htmlencode" => \&htmlencode,
@@ -56,13 +59,21 @@ sub load_template
 		}
 	
 	my $result;
-	if($template->process("$name.tmpl",$vars,\$result))
+	if($format eq "json")
 		{
-		return [ $status, [ 'Content-Type' => 'text/html'],[$result] ];
+		$contenttype="application/json";
 		}
 	else
 		{
-		return [ 500, [ 'Content-Type' => 'text/html'],[$template->error()] ];
+		$contenttype="text/html";
+		}
+	if($template->process("$name.tmpl",$vars,\$result))
+		{
+		return [ $status, [ 'Content-Type' => $contenttype],[$result] ];
+		}
+	else
+		{
+		return [ 500, [ 'Content-Type' => $contenttype],[$template->error()] ];
 		}
 	}
 
@@ -116,21 +127,34 @@ sub build_mainmenu
 sub error404
 	{
 	my $env=shift;
-	return load_template($env,404,"error404","Page not found",
+	return load_template($env,404,"html","error404","Page not found",
 		{mainmenu => build_mainmenu($env)});
 	}
 
 sub error403
 	{
 	my $env=shift;
-	return load_template($env,403,"error403","Access Denied",
+	return load_template($env,403,"html","error403","Access Denied",
 		{mainmenu => build_mainmenu($env)});
+	}
+
+sub error401
+	{
+	my $env=shift;
+	my ($olduser)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDBUser=([^;]+)/);
+	my $destination=$env->{"REQUEST_URI"};
+	if($destination =~ m%/login.html$%)
+		{
+		$destination="";
+		}
+	return load_template($env,401,"html","login","Please Login",
+		{mainmenu => build_mainmenu($env),destination => $destination,username => ($olduser ? $olduser : "")});
 	}
 
 sub error500
 	{
 	my $env=shift;
-	return load_template($env,500,"error500","This page isn't working",
+	return load_template($env,500,"html","error500","This page isn't working",
 		{mainmenu => build_mainmenu($env)});
 	}
 
@@ -154,6 +178,19 @@ sub htmlencode
 	$in =~ s/</&lt;/sg;
 	$in =~ s/>/&gt;/sg;
 	return $in;
+	}
+
+sub log_error
+	{
+	my $r=($ENV{MOD_PERL_API_VERSION}==2 ? Apache2::RequestUtil->request : ($ENV{MOD_PERL_API_VERSION}==1 ? Apache->request : undef));
+	if($r)
+		{
+		$r->log_error(@_);
+		}
+	else
+		{
+		print STDERR join("",@_),"\n";
+		}
 	}
 
 1;
