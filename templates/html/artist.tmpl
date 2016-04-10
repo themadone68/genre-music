@@ -1,0 +1,11 @@
+[% INCLUDE _header.tmpl %]
+<h2>Description</h2>
+<p>[% artist.description || "No description" %]</p>
+<h2>Tags</h2>
+<ul>
+[% FOREACH tag IN artist.tags %]
+<li>[% FILTER htmlencode %][% tag %][% END %]</li>
+[%END%]
+</ul>
+<p><a href="[% artist.editurl %]">Edit this</a></p>
+[% INCLUDE _footer.tmpl %]

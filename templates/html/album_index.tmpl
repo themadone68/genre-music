@@ -1,0 +1,10 @@
+[% INCLUDE _header.tmpl %]
+<p>Here are a list of albums</p>
+
+<table>
+[% FOREACH album IN albums %]
+<tr><td><a href="[% album.url %]">[% FILTER htmlencode %][% album.name %][%END%]</a></td></tr>
+[% END %]
+</table>
+
+[% INCLUDE _footer.tmpl %]

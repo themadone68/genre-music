@@ -1,0 +1,28 @@
+<form class="form-horizontal" method="POST" action="[% IF album %][% album.url %][% ELSE %][% sitepath %]albums/[%END%]">
+[% IF album %]<input type="hidden" name="albumid" value="[% album.id %]"/>[% END %]
+<div class="form-group">
+<label for="name" class="col-sm-2 control-label">Name</label>
+<div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="Name of the album" value="[% FILTER htmlencode %][% album.name %][% END %]"/></div>
+</div>
+<div class="form-group">
+<label for="description" class="col-sm-2 control-label">Description</label>
+<div class="col-sm-10"><textarea class="form-control" id="description" name="description" rows="5">[% FILTER htmlencode %][% album.description %][% END %]</textarea/></div>
+</div>
+<div class="form-group">
+<label class="col-sm-2 control-label">Tags</label>
+<div class="col-sm-10">
+<select id="tags" type="text" class="form-control" name="tags" multiple="1">
+[% FOREACH tag IN tags %]
+<option [% IF album.has_tag(tag) %]selected="1" [% END %]value="[%FILTER htmlencode%][% tag.name %][%END%]">[%FILTER htmlencode%][% tag.name %][%END%]</option>
+[% END %]
+</select>
+<noscript><input type="text" class="form-control" name="tags" value=""/></noscript>
+<script>$('#tags').combomultibox({autocreate: 1});</script>
+</div>
+</div>
+<div class="form-group">
+<div class="col-sm-offset-2 col-sm-10">
+<button type="submit" class="btn btn-default">[% IF album %]Save Album[% ELSE %]Add Album[% END %]</button>
+</div>
+</div>
+</form>

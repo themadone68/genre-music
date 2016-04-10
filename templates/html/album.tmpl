@@ -1,0 +1,11 @@
+[% INCLUDE _header.tmpl %]
+<h2>Description</h2>
+<p>[% album.description || "No description" %]</p>
+<h2>Tags</h2>
+<ul>
+[% FOREACH tag IN album.tags %]
+<li>[% tag %]</li>
+[%END%]
+</ul>
+<p><a href="[% album.editurl %]">Edit this</a></p>
+[% INCLUDE _footer.tmpl %]

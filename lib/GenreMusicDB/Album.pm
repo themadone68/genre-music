@@ -1,0 +1,296 @@
+package GenreMusicDB::Album;
+
+use strict;
+use GenreMusicDB::Base;
+use GenreMusicDB::Entity;
+use GenreMusicDB::Tag;
+use Data::Dumper;
+
+our @ISA = qw(GenreMusicDB::Entity);
+
+sub new
+	{
+	my $this=shift;
+	my $class=ref($this) || $this;
+	my $self=$class->SUPER::new(@_);
+	
+	return $self;
+	}
+
+sub handle
+	{
+	my $self=shift;
+	my $env=shift;
+	if($env->{"REQUEST_METHOD"} ne "POST")
+		{
+		if($env->{"PATH_INFO"} =~ m%^/albums/(index\.(html|json))?$%)
+			{
+			my $format=$2;
+			my @albums=GenreMusicDB::Album->all();
+	
+			return load_template($env,200,$format,"album_index","List of Albums",
+				{mainmenu => build_mainmenu($env),albums => \@albums});
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/albums/new.html?$%)
+			{
+			if($env->{"REMOTE_USER"})
+				{
+				my @alltags;
+				
+				@alltags=GenreMusicDB::Tag->all();
+				return load_template($env,200,"html","new_album","Add a Album",
+					{mainmenu => build_mainmenu($env),tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
+				}
+			else
+				{
+				return error401($env);
+				}
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/albums/(.*?)(\.html)?$%)
+			{
+			my $album;
+			my $title=$1;
+			my ($sth,$row);
+			my $dbh=open_database();
+			$sth=$dbh->prepare("SELECT * FROM albums WHERE name LIKE ".$dbh->quote($title));
+			if(($sth)&&($sth->execute))
+				{
+				if($row=$sth->fetch)
+					{
+					$album=GenreMusicDB::Album->new(@{$row});
+					}
+				$sth->finish;
+				}
+			if($album)
+				{
+				my $req = Plack::Request->new($env);
+				my $query=$req->parameters;
+				
+				if(($query->{"edit"})&&($env->{"REMOTE_USER"}))
+					{
+					my @alltags;
+				
+					@alltags=GenreMusicDB::Tag->all(@{$album->tags});
+					return load_template($env,200,"html","edit_album","Edit ".$album->{"name"},
+						{mainmenu => build_mainmenu($env),album => $album,tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
+					}
+				elsif($query->{"edit"})
+					{
+					return error401($env);
+					}
+				else
+					{
+					return load_template($env,200,"html","album",$album->{"name"},
+						{mainmenu => build_mainmenu($env),album => $album});
+					}
+				}
+			else
+				{
+				return error404($env);
+				}
+			}
+		else
+			{
+			return error500($env);
+			}
+		}
+	else
+		{
+		my $req = Plack::Request->new($env);
+		my $query=$req->parameters;
+		my $dbh=open_database();
+		if($query->{"delete"})
+			{
+			}
+		else
+			{
+			my $album;
+			if($query->{"albumid"})
+				{
+				my ($sth,$row);
+				$sth=$dbh->prepare("SELECT * FROM albums WHERE albumid=".$dbh->quote($query->{"albumid"}));
+				if(($sth)&&($sth->execute))
+					{
+					if($row=$sth->fetch)
+						{
+						$album=GenreMusicDB::Album->new(@{$row});
+						}
+					$sth->finish;
+					}
+				}
+			else
+				{
+				$album=GenreMusicDB::Album->new();
+				}
+			if(!$album)
+				{
+				return error500($env);
+				}
+			else
+				{
+				my $ok=$dbh->do("BEGIN");
+				if($album->{"id"})
+					{
+					$ok=$dbh->do("UPDATE albums SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
+						("name","description"))." WHERE albumid=".$dbh->quote($query->{"albumid"})) if($ok);
+					}
+				else
+					{
+					$ok=$dbh->do("INSERT INTO albums VALUES (".join(",",map $dbh->quote($_),
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0)).")") if($ok);
+					$album=GenreMusicDB::Album->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
+					}
+				my %tags;
+				foreach my $tag (@{$album->tags})
+					{
+					$tags{lc($tag)}=0;
+					}
+				foreach my $tag ($query->get_all("tags"))
+					{
+					next if($tag =~ /^\s*$/);
+					if(defined($tags{lc($tag)}))
+						{
+						$tags{lc($tag)}=1;
+						next;
+						}
+					$tags{lc($tag)}=1;
+					$ok=$dbh->do("INSERT INTO album_tags VALUES (".join(",",map $dbh->quote($_),
+						($album->{"id"},$tag,$env->{"REMOTE_USER"},time)).")") if($ok);
+					}
+				foreach my $tag (keys %tags)
+					{
+					if($tags{lc($tag)}==0)
+						{
+						$ok=$dbh->do("DELETE FROM album_tags WHERE albumid=".$dbh->quote($album->{"id"})." AND tag LIKE ".$dbh->quote($tag)) if($ok);
+						}
+					}
+				if($ok)
+					{
+					$dbh->do("COMMIT");
+					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$album->url],[] ];
+					}
+				else
+					{
+					$dbh->do("ROLLBACK");
+					return error500($env);
+					}
+				}
+			}
+		}
+	}
+
+sub url
+	{
+	my $self=shift;
+	return "${sitepath}albums/".cgiencode($self->{"name"}).".html";
+	}
+
+sub editurl
+	{
+	my $self=shift;
+	return "${sitepath}albums/".cgiencode($self->{"name"}).".html?edit=1";
+	}
+
+sub tags
+	{
+	my $self=shift;
+	my @tags;
+
+	if(!defined($self->{"tags"}))
+		{
+		$self->{"tags"}={};
+		my $dbh=open_database();
+		my ($sth,$row);
+		$sth=$dbh->prepare("SELECT DISTINCT tag FROM album_tags WHERE albumid=".$dbh->quote($self->{"id"})." ORDER BY lower(tag)");
+		if(($sth)&&($sth->execute))
+			{
+			while($row=$sth->fetch)
+				{
+				$self->{"tags"}->{lc($row->[0])}=$row->[0];
+				push @tags,$row->[0];
+				}
+			$sth->finish;
+			}
+		}
+	else
+		{
+		@tags=values %{$self->{"tags"}};
+		}
+	return \@tags;
+	}
+
+sub has_song
+	{
+	my $self=shift;
+	my $songid=shift;
+	my $ret=0;
+	
+	my $dbh=open_database();
+	my ($sth,$row);
+	$sth=$dbh->prepare("SELECT songid FROM album_albums WHERE albumid=".$dbh->quote($self->id)." AND songid=".$dbh->quote($songid));
+	if(($sth)&&($sth->execute))
+		{
+		if($row=$sth->fetch)
+			{
+			$ret=1;
+			}
+		}
+	return $ret;
+	}
+
+sub create
+	{
+	my $self=shift;
+	my $dbh=open_database();
+	my $params=(ref($_[0]) eq "HASH" ? $_[0] : %{@_});
+	my $newself;
+	
+	if($dbh->do("INSERT INTO albums VALUES (".join(",",map $dbh->quote($_),
+		(undef,$params->{"name"},$params->{"description"},$params->{"addedby"},time,"",0)).")"))
+		{
+		return $self->new($dbh->func('last_insert_rowid'),$params->{"name"},$params->{"description"},$params->{"addedby"},time,"",0);
+		}
+	else
+		{
+		return undef;
+		}
+	}
+
+sub all
+	{
+	my $self=shift;
+	my ($sth,$row);
+	my @albums;
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT * FROM albums ORDER BY moderated DESC,added DESC");
+	if(($sth)&&($sth->execute))
+		{
+		while($row=$sth->fetch)
+			{
+			push @albums,GenreMusicDB::Album->new(@{$row});
+			}
+		$sth->finish;
+		}
+	return @albums;
+	}
+
+sub get
+	{
+	my $self=shift;
+	my $id=shift;
+	my ($sth,$row);
+	my $ret;
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT * FROM albums WHERE albumid=".$dbh->quote($id));
+	if(($sth)&&($sth->execute))
+		{
+		while($row=$sth->fetch)
+			{
+			$ret=GenreMusicDB::Album->new(@{$row});
+			}
+		$sth->finish;
+		}
+	return $ret;
+	}
+
+1;
