@@ -12,6 +12,7 @@ use GenreMusicDB::User;
 use GenreMusicDB::Album;
 use GenreMusicDB::Artist;
 use GenreMusicDB::Tag;
+use GenreMusicDB::Role;
 
 sub homepage
 	{
@@ -231,6 +232,10 @@ my $app = sub
 	elsif($env->{"PATH_INFO"} =~ m%^/users/?%)
 		{
 		return GenreMusicDB::User->handle($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/roles/?%)
+		{
+		return GenreMusicDB::Role->handle($env);
 		}
 	else
 		{

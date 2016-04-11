@@ -1,0 +1,10 @@
+[% INCLUDE _header.tmpl %]
+<p>Here are a list of roles</p>
+
+<ul>
+[% FOREACH role IN roles %]
+<li><a href="[% role.url %]">[% FILTER htmlencode %][% role.name %][%END%]</a></li>
+[% END %]
+</ul>
+<p><a href="[% FILTER htmlencode %][% sitepath %]roles/new.html[%END%]">Add role</a></p>
+[% INCLUDE _footer.tmpl %]

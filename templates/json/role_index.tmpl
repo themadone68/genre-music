@@ -1,0 +1,1 @@
+[[% FOREACH role IN roles %][% IF notfirst %],[%END%]{"id": "[% role.id %]","name": "[% role.name %]"}[% SET notfirst=1 %][% END %]]

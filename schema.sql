@@ -11,6 +11,8 @@ CREATE TABLE album_songs (albumid INTEGER NOT NULL,songid INTEGER NOT NULL);
 CREATE TABLE song_links (songid INTEGER NOT NULL,url NOT NULL);
 CREATE TABLE album_links (albumid INTEGER NOT NULL,url NOT NULL);
 CREATE TABLE artist_links (artistid INTEGER NOT NULL,url NOT NULL);
+CREATE TABLE roles (roleid NOT NULL UNIQUE PRIMARY KEY,name);
+CREATE TABLE role_members (roleid NOT NULL,userid NOT NULL);
 
 DROP TRIGGER users_userid_upd;
 CREATE TRIGGER users_userid_upd AFTER UPDATE OF userid ON users
@@ -25,6 +27,7 @@ CREATE TRIGGER users_userid_upd AFTER UPDATE OF userid ON users
     UPDATE song_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE album_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE artist_tags SET addedby=new.userid WHERE addedby=old.userid;
+    UPDATE role_members SET userid=new.userid WHERE userid=old.userid;
   END;
 
 DROP TRIGGER songs_songid_upd;
@@ -70,4 +73,10 @@ CREATE TRIGGER artists_artistid_del AFTER DELETE ON artists
     DELETE FROM artist_tags WHERE artistid=old.artistid;
     DELETE FROM artist_links WHERE artistid=old.artistid;
     DELETE FROM song_contributors WHERE artistid=old.artistid;
+  END;
+
+DROP TRIGGER roles_roleid_upd;
+CREATE TRIGGER roles_roleid_upd AFTER UPDATE OF roleid ON roles
+  FOR EACH ROW BEGIN
+    UPDATE role_members SET roleid=new.userid WHERE roleid=old.userid;
   END;
