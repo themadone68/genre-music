@@ -44,7 +44,7 @@ sub login
 		if(($query->{"username"} ne "")&&($query->{"password"} ne ""))
 			{
 			my $user=GenreMusicDB::User->get($query->{"username"});
-			if($user->has_password($query->{"password"}))
+			if(($user)&&($user->has_password($query->{"password"})))
 				{
 				my $domain=$env->{"SERVER_NAME"};
 				$domain =~ s%^www\.%.%;
@@ -94,14 +94,14 @@ sub login
 				}
 			else
 				{
-				my ($olduser)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDBUser=([^;]+)/);
 				return load_template($env,200,"html","login","Login",
-					{mainmenu => build_mainmenu($env),destination => $query->{"destination"},errors=>["wrong"],username => ($olduser ? $olduser : "")});
+					{mainmenu => build_mainmenu($env),destination => $query->{"destination"},errors=>["wrong"],username => $query->{"username"}});
 				}
 			}
 		else
 			{
-			return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."login.html?username=".$query->{"username"}],[] ];
+			return load_template($env,200,"html","login","Login",
+				{mainmenu => build_mainmenu($env),destination => $query->{"destination"},errors=>["wrong"],username => $query->{"username"}});
 			}
 		}
 	}

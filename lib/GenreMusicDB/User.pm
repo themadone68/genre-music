@@ -433,7 +433,7 @@ sub get
 	my ($sth,$row);
 	my $ret;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid=".$dbh->quote($id));
+	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid=".$dbh->quote($id)." OR email LIKE ".$dbh->quote($id));
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
