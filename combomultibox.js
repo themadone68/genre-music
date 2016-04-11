@@ -64,6 +64,30 @@ $.widget( 'custom.combomultibox',
                 value=bestmatch;
                 valueLowerCase = value.toLowerCase();
                 }
+              else if(count>1)
+                {
+                var newcount=0;
+                var add=-1;
+                do
+                  {
+                  add=add+1;
+                  newcount=0;
+                  origthis.element.children( 'option' ).each(function()
+                    {
+                    if($( this ).text().toLowerCase().substring(0,valueLowerCase.length+add+1) === bestmatch.toLowerCase().substring(0,valueLowerCase.length+add+1))
+                      {
+                      newcount++;
+                      }
+                    });
+                  }
+                while(newcount==count);
+                if(add>0)
+                  {
+                  origthis.input.val(bestmatch.substring(0,valueLowerCase.length+add));
+                  }
+
+                return;
+                }
               }
             // Search for a match (case-insensitive)
             origthis.element.children( 'option' ).each(function()
