@@ -1,0 +1,1 @@
+[[% FOREACH song IN songs %][% IF notfirst %],[%END%]{"id": "[% song.id %]","name": "[% song.name %]"}[% SET notfirst=1 %][% END %]]
