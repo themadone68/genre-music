@@ -88,6 +88,7 @@ sub build_mainmenu
 			{ url => "/", name => "Home" },
 			{ url => "/songs/new.html", name => "Add Song" },
 			{ url => "/users/new.html", name => "Invite" },
+			{ url => "/users/me.html", name => "Profile" },
 			{ url => "/logout.html", name => "Logout" },
 			);
 		}
