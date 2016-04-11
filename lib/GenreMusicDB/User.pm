@@ -14,7 +14,6 @@ sub new
 	$self->{"id"}=shift;
 	$self->{"name"}=shift;
 	$self->{"email"}=shift;
-	$self->{"password"}=shift;
 	return $self;
 	}
 
@@ -64,7 +63,7 @@ sub handle
 				{
 				$userid=$env->{"REMOTE_USER"};
 				}
-			$sth=$dbh->prepare("SELECT * FROM users WHERE userid LIKE ".$dbh->quote($userid));
+			$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
 			if(($sth)&&($sth->execute))
 				{
 				if($row=$sth->fetch)
@@ -128,7 +127,7 @@ sub handle
 				{
 				$userid=$env->{"REMOTE_USER"};
 				}
-			$sth=$dbh->prepare("SELECT * FROM users WHERE userid LIKE ".$dbh->quote($userid));
+			$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
 			if(($sth)&&($sth->execute))
 				{
 				if($row=$sth->fetch)
@@ -186,11 +185,33 @@ sub handle
 						{
 						push @errors,"name";
 						}
+					if($query->{"newpassword"} ne "")
+						{
+						if($query->{"confirm"} ne $query->{"newpassword"})
+							{
+							push @errors,"pwmismatch";
+							}
+						elsif(!$user->has_password($query->{"password"}))
+							{
+							push @errors,"wrongpw";
+							}
+						else
+							{
+							my $salt=$saltchars[int(rand($#saltchars+1))].$saltchars[int(rand($#saltchars+1))];
+							$query->{"password"}=crypt($query->{"newpassword"},$salt);
+							push @validfields,"password";
+							}
+						}
 					
 					if($#errors==-1)
 						{
 						$ok=$dbh->do("UPDATE users SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
 							@validfields)." WHERE userid=".$dbh->quote($user->id)) if($ok);
+						if($query->{"password"})
+							{
+							my ($session)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDB=([^;]+)/);
+							$ok=$dbh->do("UPDATE sessions SET password=".$dbh->quote($query->{"password"})." WHERE sessionid=".$dbh->quote($session)) if($ok);
+							}
 						}
 					else
 						{
@@ -336,7 +357,7 @@ sub find
 	my $user;
 	my $dbh=open_database();
 	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT * FROM users WHERE userid LIKE ".$dbh->quote($userid));
+	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
 	if(($sth)&&($sth->execute))
 		{
 		if($row=$sth->fetch)
@@ -367,7 +388,7 @@ sub all
 	my ($sth,$row);
 	my @users;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM users ORDER BY lower(name)");
+	$sth=$dbh->prepare("SELECT userid,name,email FROM users ORDER BY lower(name)");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -377,6 +398,51 @@ sub all
 		$sth->finish;
 		}
 	return @users;
+	}
+
+sub has_password
+	{
+	my $self=shift;
+	my $password=shift;
+	my $currpassword;
+	my ($sth,$row);
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT password FROM users WHERE userid=".$dbh->quote($self->id));
+	if(($sth)&&($sth->execute))
+		{
+		if($row=$sth->fetch)
+			{
+			$currpassword=$row->[0];
+			}
+		$sth->finish;
+		}
+	if(crypt($password,$currpassword) eq $currpassword)
+		{
+		return 1;
+		}
+	else
+		{
+		return 0;
+		}
+	}
+
+sub get
+	{
+	my $self=shift;
+	my $id=shift;
+	my ($sth,$row);
+	my $ret;
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid=".$dbh->quote($id));
+	if(($sth)&&($sth->execute))
+		{
+		while($row=$sth->fetch)
+			{
+			$ret=GenreMusicDB::User->new(@{$row});
+			}
+		$sth->finish;
+		}
+	return $ret;
 	}
 
 1;

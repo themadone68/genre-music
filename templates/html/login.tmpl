@@ -1,4 +1,7 @@
 [% INCLUDE _header.tmpl %]
+[% IF errors %]
+<h2>User name or password are incorrect</h2>
+[%END%]
 <form class="form-horizontal" method="POST" action="[% sitepath %]login.html">
 [% IF destination %]<input type="hidden" name="destination" value="[% FILTER htmlencode %][% destination %][%END%]"/>[%END%]
 <div class="form-group">

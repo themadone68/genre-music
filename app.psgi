@@ -43,54 +43,60 @@ sub login
 		
 		if(($query->{"username"} ne "")&&($query->{"password"} ne ""))
 			{
-			my ($sth,$row);
-			$sth=$dbh->prepare("SELECT userid,password FROM users WHERE userid LIKE ".$dbh->quote($query->{"username"})." OR email LIKE ".$dbh->quote($query->{"username"}));
-			if(($sth)&&($sth->execute))
+			my $user=GenreMusicDB::User->get($query->{"username"});
+			if($user->has_password($query->{"password"}))
 				{
-				if(($row=$sth->fetch)&&($row->[0])&&(crypt($query->{"password"},$row->[1]) eq $row->[1]))
+				my $domain=$env->{"SERVER_NAME"};
+				$domain =~ s%^www\.%.%;
+				my ($sth,$row);
+				my $password;
+				my $sth=$dbh->prepare("SELECT password FROM users WHERE userid=".$dbh->quote($user->id));
+				if(($sth)&&($sth->execute))
 					{
-					$sth->finish;
-					
-					my $domain=$env->{"SERVER_NAME"};
-					$domain =~ s%^www\.%.%;
-					print STDERR "$domain\n";
-					my $session=md5_hex(join("--",($row->[0],$row->[1],time)));
-					if($dbh->do("INSERT INTO sessions VALUES (".join(",",map $dbh->quote($_),($session,$row->[0],$row->[1],time,time,time,$env->{"REMOTE_ADDR"})).")"))
+					if($row=$sth->fetch)
 						{
-						my @cookies=('Set-Cookie' => "GenreMusicDB=$session; path=".$sitepath."; domain=$domain");
-						if($query->{"remember"})
-							{
-							push @cookies,'Set-Cookie' => "GenreMusicDBUser=".$row->[0]."; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60*365));
-							}
-						my $destination=$query->{"destination"};
-						if($destination =~ m%^$sitepath%)
-							{
-							$destination="http://".$env->{"HTTP_HOST"}.$destination;
-							}
-						else
-							{
-							$destination="";
-							}
-							
-						if($destination eq "")
-							{
-							$destination="http://".$env->{"HTTP_HOST"}.$sitepath;
-							}
-						return [ 302, [
-							'Location' => $destination,
-							@cookies,
-							],[] ];
+						$password=$row->[0];
+						}
+					$sth->finish;
+					}
+				
+				my $session=md5_hex(join("--",($user->id,$password,time)));
+				if($dbh->do("INSERT INTO sessions VALUES (".join(",",map $dbh->quote($_),($session,$user->id,$password,time,time,time,$env->{"REMOTE_ADDR"})).")"))
+					{
+					my @cookies=('Set-Cookie' => "GenreMusicDB=$session; path=".$sitepath."; domain=$domain");
+					if($query->{"remember"})
+						{
+						push @cookies,'Set-Cookie' => "GenreMusicDBUser=".$user->id."; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60*365));
+						}
+					my $destination=$query->{"destination"};
+					if($destination =~ m%^$sitepath%)
+						{
+						$destination="http://".$env->{"HTTP_HOST"}.$destination;
 						}
 					else
 						{
-						return error500($env);
+						$destination="";
 						}
+						
+					if($destination eq "")
+						{
+						$destination="http://".$env->{"HTTP_HOST"}.$sitepath;
+						}
+					return [ 302, [
+						'Location' => $destination,
+						@cookies,
+						],[] ];
 					}
 				else
 					{
-					$sth->finish;
-					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."login.html?username=".$query->{"username"}],[] ];
+					return error500($env);
 					}
+				}
+			else
+				{
+				my ($olduser)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDBUser=([^;]+)/);
+				return load_template($env,200,"html","login","Login",
+					{mainmenu => build_mainmenu($env),destination => $query->{"destination"},errors=>["wrong"],username => ($olduser ? $olduser : "")});
 				}
 			}
 		else

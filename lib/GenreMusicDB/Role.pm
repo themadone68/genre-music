@@ -229,7 +229,7 @@ sub members
 	if(!defined($self->{"members"}))
 		{
 		$self->{"members"}={};
-		$sth=$dbh->prepare("SELECT * FROM users WHERE userid IN (SELECT userid FROM role_members WHERE roleid=".$dbh->quote($self->id).")");
+		$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid IN (SELECT userid FROM role_members WHERE roleid=".$dbh->quote($self->id).")");
 		if(($sth)&&($sth->execute))
 			{
 			while($row=$sth->fetch)
