@@ -38,19 +38,7 @@ sub handle
 		{
 		if($env->{"PATH_INFO"} =~ m%^/users/(index\.html)?$%)
 			{
-			my @users;
-			my ($sth,$row);
-			my $dbh=open_database();
-			$sth=$dbh->prepare("SELECT * FROM users WHERE userid NOT LIKE 'temp:%' ORDER BY lower(name)");
-			if(($sth)&&($sth->execute))
-				{
-				while($row=$sth->fetch)
-					{
-					push @users,GenreMusicDB::User->new(@{$row});
-					}
-				$sth->finish;
-				}
-	
+			my @users=GenreMusicDB::User->all();
 			return load_template($env,200,"html","user_index","List of Users",
 				{mainmenu => build_mainmenu($env),users => \@users});
 			}
@@ -372,4 +360,23 @@ sub is_temporary
 		return 0;
 		}
 	}
+
+sub all
+	{
+	my $self=shift;
+	my ($sth,$row);
+	my @users;
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT * FROM users ORDER BY lower(name)");
+	if(($sth)&&($sth->execute))
+		{
+		while($row=$sth->fetch)
+			{
+			push @users,GenreMusicDB::User->new(@{$row});
+			}
+		$sth->finish;
+		}
+	return @users;
+	}
+
 1;
