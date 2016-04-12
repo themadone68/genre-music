@@ -5,6 +5,7 @@ use GenreMusicDB::Base;
 require Tie::Hash;
 our @ISA = qw(Tie::Hash);
 use vars qw ( $AUTOLOAD );
+use overload '==' => \&op_equal,fallback => 1;
 
 sub new
 	{
@@ -136,6 +137,21 @@ sub editlink
 	{
 	my $self=shift;
 	return "<a href=\"".htmlencode($self->editurl)."\">".$self->name."</a>";
+	}
+
+sub op_equal
+	{
+	my $self=shift;
+	my $other=shift;
+	
+	if((ref($self) eq ref($other))&&($self->id eq $other->id))
+		{
+		return 1;
+		}
+	else
+		{
+		return 0;
+		}
 	}
 
 1;
