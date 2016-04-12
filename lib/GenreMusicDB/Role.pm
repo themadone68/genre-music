@@ -40,7 +40,7 @@ sub handle
 					my @allusers;
 				
 					@allusers=GenreMusicDB::User->all();
-					return load_template($env,200,"html","new_role","Add a Role",
+					return load_template($env,200,"html","role_new","Add a Role",
 						{mainmenu => build_mainmenu($env),users => \@allusers,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
 				else
@@ -80,7 +80,7 @@ sub handle
 						my @allusers;
 				
 						@allusers=GenreMusicDB::User->all();
-						return load_template($env,200,"html","edit_role","Edit ".$role->{"name"},
+						return load_template($env,200,"html","role_edit","Edit ".$role->{"name"},
 							{mainmenu => build_mainmenu($env),role => $role,users => \@allusers,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 						}
 					else

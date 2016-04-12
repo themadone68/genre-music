@@ -35,7 +35,7 @@ sub handle
 			{
 			if($env->{"REMOTE_USER"})
 				{
-				return load_template($env,200,"html","new_user","Invite a Friend",
+				return load_template($env,200,"html","user_new","Invite a Friend",
 					{mainmenu => build_mainmenu($env)});
 				}
 			else
@@ -62,7 +62,7 @@ sub handle
 					{
 					if($user->id eq $env->{"REMOTE_USER"})
 						{
-						return load_template($env,200,"html","edit_user",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
+						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user});
 						}
 					else
@@ -190,7 +190,7 @@ sub handle
 					else
 						{
 						$dbh->do("ROLLBACK");
-						return load_template($env,200,"html","edit_user",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
+						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user,errors => \@errors});
 						
 						exit;

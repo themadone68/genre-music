@@ -38,7 +38,7 @@ sub handle
 				my @alltags;
 				
 				@alltags=GenreMusicDB::Tag->all();
-				return load_template($env,200,"html","new_album","Add a Album",
+				return load_template($env,200,"html","album_new","Add a Album",
 					{mainmenu => build_mainmenu($env),tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 				}
 			else
@@ -71,7 +71,7 @@ sub handle
 					my @alltags;
 				
 					@alltags=GenreMusicDB::Tag->all(@{$album->tags});
-					return load_template($env,200,"html","edit_album","Edit ".$album->{"name"},
+					return load_template($env,200,"html","album_edit","Edit ".$album->{"name"},
 						{mainmenu => build_mainmenu($env),album => $album,tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
 				elsif($query->{"edit"})
