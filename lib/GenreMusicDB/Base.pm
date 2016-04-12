@@ -5,9 +5,10 @@ use Apache::DBI;
 use Template;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error);
+our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error $curruser);
 our $sitepath;
 our $filepath;
+our $curruser;
 my $dbh;
 
 sub open_database
@@ -40,7 +41,7 @@ sub load_template
 		{
 		"sitepath" => $sitepath,
 		"title" => $title,
-		"curruser" => $env->{"REMOTE_USER"} || "",
+		"curruser" => $curruser
 		};
 	if(($#_==0)&&(ref($_[0]) eq "HASH"))
 		{
