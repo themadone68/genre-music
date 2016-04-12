@@ -2,31 +2,21 @@ package GenreMusicDB::User;
 
 use strict;
 use GenreMusicDB::Base;
+use GenreMusicDB::Object;
+use GenreMusicDB::Role;
 use MIME::Entity;
 
+our @ISA = qw(GenreMusicDB::Object);
 my @saltchars=("0".."9","a".."z","A".."Z");
 
 sub new
 	{
 	my $this=shift;
 	my $class=ref($this) || $this;
-	my $self=bless {},$class;
-	$self->{"id"}=shift;
-	$self->{"name"}=shift;
+	my $self=$class->SUPER::new(shift,shift);
 	$self->{"email"}=shift;
+	$self->{"password"}=shift;
 	return $self;
-	}
-
-sub id
-	{
-	my $self=shift;
-	return $self->{"id"};
-	}
-
-sub email
-	{
-	my $self=shift;
-	return $self->{"email"};
 	}
 
 sub handle
@@ -63,22 +53,14 @@ sub handle
 				{
 				$userid=$env->{"REMOTE_USER"};
 				}
-			$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
-			if(($sth)&&($sth->execute))
-				{
-				if($row=$sth->fetch)
-					{
-					$user=GenreMusicDB::User->new(@{$row});
-					}
-				$sth->finish;
-				}
+			$user=GenreMusicDB::User->get($userid);
 			if($user)
 				{
 				my $req = Plack::Request->new($env);
 				my $query=$req->parameters;
 				if(($query->{"edit"})&&($env->{"REMOTE_USER"}))
 					{
-					if($user->{"id"} eq $env->{"REMOTE_USER"})
+					if($user->id eq $env->{"REMOTE_USER"})
 						{
 						return load_template($env,200,"html","edit_user",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user});
@@ -94,7 +76,7 @@ sub handle
 					}
 				else
 					{
-					return load_template($env,200,"html","user",$user->{"name"},
+					return load_template($env,200,"html","user",$user->name." Profile",
 						{mainmenu => build_mainmenu($env),user => $user});
 					}
 				}
@@ -127,15 +109,7 @@ sub handle
 				{
 				$userid=$env->{"REMOTE_USER"};
 				}
-			$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
-			if(($sth)&&($sth->execute))
-				{
-				if($row=$sth->fetch)
-					{
-					$user=GenreMusicDB::User->new(@{$row});
-					}
-				$sth->finish;
-				}
+			$user=GenreMusicDB::User->get($userid);
 			}
 
 		if($query->{"delete"})
@@ -268,7 +242,7 @@ sub handle
 							});
 	
 						my ($text,$html);
-						my $otheruser=GenreMusicDB::User->find($env->{"REMOTE_USER"});
+						my $otheruser=GenreMusicDB::User->get($env->{"REMOTE_USER"});
 						my $vars=
 							{
 							"sitepath" => $sitepath,
@@ -329,7 +303,7 @@ sub url
 	my $self=shift;
 	if(!$self->is_temporary)
 		{
-		return "${sitepath}users/".cgiencode($self->{"id"}).".html";
+		return "${sitepath}users/".cgiencode($self->id).".html";
 		}
 	else
 		{
@@ -342,7 +316,7 @@ sub editurl
 	my $self=shift;
 	if(!$self->is_temporary)
 		{
-		return "${sitepath}users/".cgiencode($self->{"id"}).".html?edit=1";
+		return "${sitepath}users/".cgiencode($self->id).".html?edit=1";
 		}
 	else
 		{
@@ -350,29 +324,10 @@ sub editurl
 		}
 	}
 
-sub find
-	{
-	my $self=shift;
-	my $userid=shift;
-	my $user;
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid LIKE ".$dbh->quote($userid));
-	if(($sth)&&($sth->execute))
-		{
-		if($row=$sth->fetch)
-			{
-			$user=GenreMusicDB::User->new(@{$row});
-			}
-		$sth->finish;
-		}
-	return $user;
-	}
-
 sub is_temporary
 	{
 	my $self=shift;
-	if ($self->{"id"} =~ /^temp:/)
+	if ($self->id =~ /^temp:/)
 		{
 		return 1;
 		}
@@ -388,7 +343,7 @@ sub all
 	my ($sth,$row);
 	my @users;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT userid,name,email FROM users ORDER BY lower(name)");
+	$sth=$dbh->prepare("SELECT * FROM users ORDER BY lower(name)");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -404,19 +359,7 @@ sub has_password
 	{
 	my $self=shift;
 	my $password=shift;
-	my $currpassword;
-	my ($sth,$row);
-	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT password FROM users WHERE userid=".$dbh->quote($self->id));
-	if(($sth)&&($sth->execute))
-		{
-		if($row=$sth->fetch)
-			{
-			$currpassword=$row->[0];
-			}
-		$sth->finish;
-		}
-	if(crypt($password,$currpassword) eq $currpassword)
+	if(crypt($password,$self->password) eq $self->password)
 		{
 		return 1;
 		}
@@ -433,7 +376,7 @@ sub get
 	my ($sth,$row);
 	my $ret;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid=".$dbh->quote($id)." OR email LIKE ".$dbh->quote($id));
+	$sth=$dbh->prepare("SELECT * FROM users WHERE userid=".$dbh->quote($id)." OR email LIKE ".$dbh->quote($id));
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -443,6 +386,71 @@ sub get
 		$sth->finish;
 		}
 	return $ret;
+	}
+
+sub password
+	{
+	my $self=shift;
+	my ($parentpkg,$func,$line);
+	my $caller=0;
+	($parentpkg,undef,$line)=caller($caller);
+	(undef,undef,undef,$func)=caller($caller+1);
+	while($func =~ /::(FETCH|STORE|AUTOLOAD)$/)
+		{
+		($parentpkg,undef,$line)=caller(++$caller);
+		(undef,undef,undef,$func)=caller($caller+1);
+		}
+	if(($parentpkg eq ref($self))||($func eq "GenreMusicDB::User::password"))
+		{
+		return $self->{"password"};
+		}
+#	$caller=0;
+#	while($caller<20)
+#		{
+#		($parentpkg,undef,$line)=caller($caller++);
+#		print STDERR "$parentpkg.$line\n";
+#		}
+#	die "$parentpkg.$line: invalid access to password";
+	return "[SECRET]";
+	}
+
+sub roles
+	{
+	my $self=shift;
+	my @roles;
+	my ($sth,$row);
+	my $dbh=open_database();
+	if(!defined($self->{"_roles"}))
+		{
+		$self->{"_roles"}={};
+		$sth=$dbh->prepare("SELECT * FROM roles WHERE roleid IN (SELECT roleid FROM role_members WHERE userid=".$dbh->quote($self->id).")");
+		if(($sth)&&($sth->execute))
+			{
+			while($row=$sth->fetch)
+				{
+				$self->{"_roles"}->{lc($row->[0])}=GenreMusicDB::Role->new(@{$row});
+				}
+			$sth->finish;
+			}
+		}
+	@roles=values %{$self->{"_roles"}};
+	return \@roles;
+	}
+
+sub has_role
+	{
+	my $self=shift;
+	my $roleid=shift;
+	
+	if(ref($roleid) eq "GenreMusicDB::Role")
+		{
+		$roleid=$roleid->id;
+		}
+	if(!defined($self->{"_roles"}))
+		{
+		$self->roles();
+		}
+	return defined($self->{"_roles"}->{$roleid});
 	}
 
 1;
