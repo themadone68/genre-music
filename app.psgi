@@ -138,7 +138,7 @@ sub static_content
 	{
 	my $env=shift;
 	my $filename;
-	if(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|txt|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
+	if(( $env->{"PATH_INFO"} =~ m%^/(.*)$% )&&( -f $filepath.$1 ))
 		{
 		$filename=$filepath.$1;
 		}
@@ -163,6 +163,7 @@ my $app = sub
 	my ($session)=(($env->{"HTTP_COOKIE"} || "") =~ /GenreMusicDB=([^;]+)/);
 	$sitepath=$env->{"SCRIPT_NAME"} || "/";
 	$filepath=($env->{"DOCUMENT_ROOT"} || ".").$sitepath;
+	$curruser=undef;
 	if($session)
 		{
 		my $dbh=open_database($env);
@@ -174,6 +175,7 @@ my $app = sub
 			if($row=$sth->fetch)
 				{
 				$env->{"REMOTE_USER"}=$row->[0];
+				$curruser=GenreMusicDB::User->get($env->{"REMOTE_USER"});
 				}
 			else
 				{
@@ -187,6 +189,10 @@ my $app = sub
 		return error500($env);
 		}
 	elsif(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|txt|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
+		{
+		return static_content($env);
+		}
+	elsif(( $env->{"PATH_INFO"} =~ m%^/(fonts/.*)$% )&&( -f $filepath.$1 ))
 		{
 		return static_content($env);
 		}
