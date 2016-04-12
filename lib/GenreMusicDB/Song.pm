@@ -75,6 +75,35 @@ sub handle
 					{
 					return error401($env);
 					}
+				elsif($query->{"moderate"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					elsif(!$curruser->has_role("moderator"))
+						{
+						return error403($env);
+						}
+					else
+						{
+						my $dbh=open_database();
+						$dbh->do("UPDATE songs SET moderated=strftime('%s','now'),moderatedby=".$dbh->quote($curruser->id)." WHERE songid=".$dbh->quote($song->id));
+						return [ 302, [ 'Location' => $env->{"HTTP_REFERER"}],[] ];
+						}
+					}
+				elsif($query->{"delete"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					else
+						{
+						return load_template($env,200,"html","song_delete","Delete ".$song->{"name"}."?",
+							{mainmenu => build_mainmenu($env),song => $song});
+						}
+					}
 				else
 					{
 					return load_template($env,200,"html","song",$song->{"name"},
@@ -96,32 +125,32 @@ sub handle
 		my $req = Plack::Request->new($env);
 		my $query=$req->parameters;
 		my $dbh=open_database();
-		if($query->{"delete"})
+		my $song;
+
+		if($env->{"PATH_INFO"} =~ m%^/songs/((new|index).html)?$%)
 			{
+			$song=GenreMusicDB::Song->new();
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/songs/(.*?)(\.html)?$%)
+			{
+			my $songid=$1;
+			my ($sth,$row);
+			$song=GenreMusicDB::Song->get($songid);
+			}
+
+		if(!$song)
+			{
+			return error500($env);
 			}
 		else
 			{
-			my $song;
-			if($query->{"songid"})
+			if($query->{"delete"})
 				{
-				my ($sth,$row);
-				$sth=$dbh->prepare("SELECT * FROM songs WHERE songid=".$dbh->quote($query->{"songid"}));
-				if(($sth)&&($sth->execute))
+				if($query->{"confirm"} eq "Yes")
 					{
-					if($row=$sth->fetch)
-						{
-						$song=GenreMusicDB::Song->new(@{$row});
-						}
-					$sth->finish;
+					$dbh->do("DELETE FROM songs WHERE songid=".$dbh->quote($song->id));
 					}
-				}
-			else
-				{
-				$song=GenreMusicDB::Song->new();
-				}
-			if(!$song)
-				{
-				return error500($env);
+				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}songs/"],[] ];
 				}
 			else
 				{
@@ -134,7 +163,7 @@ sub handle
 				else
 					{
 					$ok=$dbh->do("INSERT INTO songs VALUES (".join(",",map $dbh->quote($_),
-						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0)).")") if($ok);
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,($curruser->has_role("moderator") ? $curruser->id : ""),($curruser->has_role("moderator") ? time : 0))).")") if($ok);
 					$song=GenreMusicDB::Song->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
 					}
 				my %tags;

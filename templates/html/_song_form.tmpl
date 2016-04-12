@@ -23,7 +23,6 @@ function block_tab(elem,e)
   }
 //--></script>
 <form id="editsong" class="form-horizontal" method="POST" action="[% IF song %][% song.url %][% ELSE %][% sitepath %]songs/[%END%]">
-[% IF song %]<input type="hidden" name="songid" value="[% song.id %]"/>[% END %]
 <div class="form-group">
 <label for="name" class="col-sm-2 control-label">Name</label>
 <div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="Name of the song" value="[% FILTER htmlencode %][% song.name %][% END %]"/></div>
