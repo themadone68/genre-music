@@ -2,6 +2,7 @@ package GenreMusicDB::Entity;
 
 use GenreMusicDB::Base;
 use GenreMusicDB::Object;
+use Date::Format qw(time2str);
 
 our @ISA = qw(GenreMusicDB::Object);
 
@@ -31,5 +32,11 @@ sub has_tag
 		$self->tags();
 		}
 	return defined($self->{"_tags"}->{lc($tag)});
+	}
+
+sub formatted_added
+	{
+	my $self=shift;
+	return time2str("%Y/%m/%d",$self->added);
 	}
 1;
