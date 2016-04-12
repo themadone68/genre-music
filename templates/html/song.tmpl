@@ -16,7 +16,7 @@
 <h2>Artists</h2>
 <ul>
 [% FOREACH artist IN song.artists %]
-<li><a href="[% artist.url %]">[% FILTER htmlencode %][% artist.name %][%END %]</a> ([% song.relationship(artist)%])</li>
+<li><a href="[% artist.url %]">[% SET notfirst=0 %][% FILTER htmlencode %][% artist.name %][%END %]</a> ([% FOREACH relationship IN song.relationship(artist)%][% IF notfirst %],[%END%][% FILTER htmlencode %][% relationship %][%END%][% SET notfirst=1 %][%END%])</li>
 [%END%]
 </ul>
 <p><a href="[% song.editurl %]">Edit this</a></p>
