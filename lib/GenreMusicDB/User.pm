@@ -192,8 +192,6 @@ sub handle
 						$dbh->do("ROLLBACK");
 						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user,errors => \@errors});
-						
-						exit;
 						}
 
 					if($ok)
