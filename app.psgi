@@ -138,7 +138,7 @@ sub static_content
 	{
 	my $env=shift;
 	my $filename;
-	if(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
+	if(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|txt|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
 		{
 		$filename=$filepath.$1;
 		}
@@ -186,7 +186,7 @@ my $app = sub
 		{
 		return error500($env);
 		}
-	elsif(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
+	elsif(( $env->{"PATH_INFO"} =~ m%^/(.*\.(css|txt|js|jpg|gif|png|html|ico))$% )&&( -f $filepath.$1 ))
 		{
 		return static_content($env);
 		}
