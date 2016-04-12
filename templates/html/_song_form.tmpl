@@ -22,6 +22,17 @@ function block_tab(elem,e)
     }
   }
 //--></script>
+[% IF errors %]
+<h2>There were some errors in your submission</h2>
+<dl>
+[% FOREACH error IN errors %]
+[% SWITCH error %]
+[% CASE DEFAULT %]
+<dt>[% error %]</dt>
+[%END%]
+[%END%]
+</dl>
+[%END%]
 <form id="editsong" class="form-horizontal" method="POST" action="[% IF song %][% song.url %][% ELSE %][% sitepath %]songs/[%END%]">
 <div class="form-group">
 <label for="name" class="col-sm-2 control-label">Name</label>

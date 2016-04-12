@@ -17,6 +17,8 @@
 <dt>Your new password and the confirmation do not match</dt>
 [% CASE 'wrongpw' %]
 <dt>Your old password is incorrect and is required to change your password</dt>
+[% CASE DEFAULT %]
+<dt>[% error %]</dt>
 [%END%]
 [%END%]
 </dl>

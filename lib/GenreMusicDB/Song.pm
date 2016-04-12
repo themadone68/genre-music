@@ -155,6 +155,7 @@ sub handle
 			else
 				{
 				my $ok=$dbh->do("BEGIN");
+				my @errors;
 				if($song->id)
 					{
 					$ok=$dbh->do("UPDATE songs SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
@@ -164,99 +165,109 @@ sub handle
 					{
 					$ok=$dbh->do("INSERT INTO songs VALUES (".join(",",map $dbh->quote($_),
 						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,($curruser->has_role("moderator") ? $curruser->id : ""),($curruser->has_role("moderator") ? time : 0))).")") if($ok);
-					$song=GenreMusicDB::Song->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
-					}
-				my %tags;
-				foreach my $tag (@{$song->tags})
-					{
-					$tags{lc($tag)}=0;
-					}
-				foreach my $tag ($query->get_all("tags"))
-					{
-					next if($tag =~ /^\s*$/);
-					if(defined($tags{lc($tag)}))
+					if($ok)
 						{
-						$tags{lc($tag)}=1;
-						next;
-						}
-					$tags{lc($tag)}=1;
-					$ok=$dbh->do("INSERT INTO song_tags VALUES (".join(",",map $dbh->quote($_),
-						($song->id,$tag,$env->{"REMOTE_USER"},time)).")") if($ok);
-					}
-				foreach my $tag (keys %tags)
-					{
-					if($tags{lc($tag)}==0)
-						{
-						$ok=$dbh->do("DELETE FROM song_tags WHERE songid=".$dbh->quote($song->id)." AND tag LIKE ".$dbh->quote($tag)) if($ok);
-						}
-					}
-				my %albums;
-				foreach my $albumid ($query->get_all("albums"))
-					{
-					my $album;
-					if($albumid =~ /^albumid:(\d+)/)
-						{
-						$album=GenreMusicDB::Album->get($1);
-						}
-					else
-						{
-						$album=GenreMusicDB::Album->create({name => $albumid,addedby => $env->{"REMOTE_USER"}}) if($ok);
-						if(!$album)
-							{
-							$ok=0;
-							}
-						}
-					next if(!$album);
-					$albums{$album->id}=1;
-					if($song->belongs_to_album($album))
-						{
-						next;
-						}
-					$ok=$dbh->do("INSERT INTO album_songs VALUES (".join(",",map $dbh->quote($_),
-						($album->id,$song->id)).")") if($ok);
-					}
-				foreach my $album (@{$song->albums})
-					{
-					next if(defined($albums{$album->id}));
-					$ok=$dbh->do("DELETE FROM album_songs WHERE songid=".$dbh->quote($song->id)." AND albumid=".$dbh->quote($album->id)) if($ok);
-					}
-				$ok=$dbh->do("DELETE FROM song_contributors WHERE songid=".$dbh->quote($song->id)) if($ok);
-				foreach my $key (keys %{$query})
-					{
-					if($key =~ /^artist_name-(\d+)/)
-						{
-						my $id=$1;
-						my $artist;
-						if($query->get("artist_id-$id"))
-							{
-							$artist=GenreMusicDB::Artist->get($query->get("artist_id-$id"));
-							if(lc($artist->name) ne lc($query->get("artist_name-$id")))
-								{
-								$artist=undef;
-								if($query->get("artist_name-$id") ne "")
-									{
-									$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
-									if(!$artist)
-										{
-										$ok=0;
-										}
-									}
-								}
-							}
-						elsif($query->get("artist_name-$id") ne "")
-							{
-							$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
-							if(!$artist)
-								{
-								$ok=0;
-								}
-							}
-						next if(!$artist);
-						$ok=$dbh->do("INSERT INTO song_contributors VALUES (".join(",",map $dbh->quote($_),
-							($song->id,$artist->id,$query->get("artist_relationship-$id"))).")") if($ok);
+						$song=GenreMusicDB::Song->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
 						}
 					}
 				if($ok)
+					{
+					my %tags;
+					foreach my $tag (@{$song->tags})
+						{
+						$tags{lc($tag)}=0;
+						}
+					foreach my $tag ($query->get_all("tags"))
+						{
+						next if($tag =~ /^\s*$/);
+						if(defined($tags{lc($tag)}))
+							{
+							$tags{lc($tag)}=1;
+							next;
+							}
+						$tags{lc($tag)}=1;
+						$ok=$dbh->do("INSERT INTO song_tags VALUES (".join(",",map $dbh->quote($_),
+							($song->id,$tag,$env->{"REMOTE_USER"},time)).")") if($ok);
+						}
+					foreach my $tag (keys %tags)
+						{
+						if($tags{lc($tag)}==0)
+							{
+							$ok=$dbh->do("DELETE FROM song_tags WHERE songid=".$dbh->quote($song->id)." AND tag LIKE ".$dbh->quote($tag)) if($ok);
+							}
+						}
+					my %albums;
+					foreach my $albumid ($query->get_all("albums"))
+						{
+						my $album;
+						if($albumid =~ /^albumid:(\d+)/)
+							{
+							$album=GenreMusicDB::Album->get($1);
+							}
+						else
+							{
+							$album=GenreMusicDB::Album->create({name => $albumid,addedby => $env->{"REMOTE_USER"}}) if($ok);
+							if(!$album)
+								{
+								push @errors,"Cannot create album: $albumid";
+								}
+							}
+						next if(!$album);
+						$albums{$album->id}=1;
+						if($song->belongs_to_album($album))
+							{
+							next;
+							}
+						$ok=$dbh->do("INSERT INTO album_songs VALUES (".join(",",map $dbh->quote($_),
+							($album->id,$song->id)).")") if($ok);
+						}
+					foreach my $album (@{$song->albums})
+						{
+						next if(defined($albums{$album->id}));
+						$ok=$dbh->do("DELETE FROM album_songs WHERE songid=".$dbh->quote($song->id)." AND albumid=".$dbh->quote($album->id)) if($ok);
+						}
+					$ok=$dbh->do("DELETE FROM song_contributors WHERE songid=".$dbh->quote($song->id)) if($ok);
+					foreach my $key (keys %{$query})
+						{
+						if($key =~ /^artist_name-(\d+)/)
+							{
+							my $id=$1;
+							my $artist;
+							if($query->get("artist_id-$id"))
+								{
+								$artist=GenreMusicDB::Artist->get($query->get("artist_id-$id"));
+								if(lc($artist->name) ne lc($query->get("artist_name-$id")))
+									{
+									$artist=undef;
+									if($query->get("artist_name-$id") ne "")
+										{
+										$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
+										if(!$artist)
+											{
+											push @errors,"Cannot create artist: ".$query->get("artist_name-$id");
+											}
+										}
+									}
+								}
+							elsif($query->get("artist_name-$id") ne "")
+								{
+								$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
+								if(!$artist)
+									{
+									push @errors,"Cannot create artist: ".$query->get("artist_name-$id");
+									}
+								}
+							next if(!$artist);
+							$ok=$dbh->do("INSERT INTO song_contributors VALUES (".join(",",map $dbh->quote($_),
+								($song->id,$artist->id,$query->get("artist_relationship-$id"))).")") if($ok);
+							}
+						}
+					}
+				else
+					{
+					push @errors,"Database error: ".$DBI::errstr;
+					}
+				if($#errors==-1)
 					{
 					$dbh->do("COMMIT");
 					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$song->url],[] ];
@@ -264,7 +275,15 @@ sub handle
 				else
 					{
 					$dbh->do("ROLLBACK");
-					return error500($env);
+					my @alltags;
+					my @allalbums;
+					my @allartists;
+				
+					@alltags=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Tag->all();
+					@allalbums=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
+					@allartists=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
+					return load_template($env,200,"html","song_edit","Edit ".$song->{"name"},
+						{mainmenu => build_mainmenu($env),song => $song,errors => \@errors,tags => \@alltags,albums => \@allalbums,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
 				}
 			}
