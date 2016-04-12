@@ -1,5 +1,13 @@
 [% INCLUDE _header.tmpl %]
-[% IF user.id==curruser %]
+
+<h2>Roles</h2>
+<ul>
+[% FOREACH role IN user.roles %]
+<li>[% role.link %]</li>
+[%END%]
+</ul>
+
+[% IF user==curruser %]
 <p><a href="[% user.editurl %]">Edit this</a></p>
 [% END %]
 [% INCLUDE _footer.tmpl %]
