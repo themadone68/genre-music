@@ -1,3 +1,54 @@
 [% INCLUDE  _header.tmpl %]
-<p><a href="[% sitepath %]songs/">Show all songs</a></p>
+[% IF unmoderated.size %]
+<div class="col-md-6">
+<div class="panel panel-default">
+<div class="panel-heading"><h2 class="panel-title">Items Awaiting Moderation</h2></div>
+<div class="panel-body">
+<table class="table">
+<tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
+[% FOREACH entity IN unmoderated %]
+<tr>
+<td>[% entity.link %]</td>
+<td>[% entity.formatted_added %]</td>
+<td btn-group">
+<a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
+[% IF !entity.moderated %]
+<a href="[% FILTER htmlencode %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+[% END %]
+<a href="[% FILTER htmlencode %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
+</td>
+</tr>
+[% END %]
+</table>
+</div>
+</div>
+</div>
+[% END %]
+
+[% IF newsongs.size %]
+<div class="col-md-6">
+<div class="panel panel-default">
+<div class="panel-heading"><h2 class="panel-title">New Songs</h2></div>
+<div class="panel-body">
+<table class="table">
+<tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
+[% FOREACH entity IN newsongs %]
+<tr>
+<td>[% entity.link %]</td>
+<td>[% entity.formatted_added %]</td>
+<td btn-group">
+<a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
+[% IF !entity.moderated %]
+<a href="[% FILTER htmlencode %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+[% END %]
+<a href="[% FILTER htmlencode %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
+</td>
+</tr>
+[% END %]
+</table>
+</div>
+</div>
+</div>
+[% END %]
+
 [% INCLUDE  _footer.tmpl %]

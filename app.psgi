@@ -17,8 +17,32 @@ use GenreMusicDB::Role;
 sub homepage
 	{
 	my $env=shift;
+	my @unmoderated;
+	my @newsongs;
+	
+	if(($curruser)&&($curruser->has_role("moderator")))
+		{
+		foreach my $song (GenreMusicDB::Song->all("moderated=0"))
+			{
+			push @unmoderated,$song;
+			}
+		foreach my $album (GenreMusicDB::Album->all("moderated=0"))
+			{
+			push @unmoderated,$album;
+			}
+		foreach my $artist (GenreMusicDB::Artist->all("moderated=0"))
+			{
+			push @unmoderated,$artist;
+			}
+		@unmoderated=sort { $a->added <=> $b->added } @unmoderated;
+		}
+	foreach my $song (GenreMusicDB::Song->all("moderated>strftime('%s','now','-7 days')"))
+		{
+		push @newsongs,$song;
+		}
+
 	return load_template($env,200,"html","homepage","Genre Music Database",
-		{mainmenu => build_mainmenu($env)});
+		{mainmenu => build_mainmenu($env),unmoderated => \@unmoderated,newsongs => \@newsongs});
 	}
 
 sub login
