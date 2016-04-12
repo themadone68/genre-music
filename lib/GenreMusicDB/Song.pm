@@ -54,19 +54,7 @@ sub handle
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/songs/(.*?)(\.html)?$%)
 			{
-			my $song;
-			my $title=$1;
-			my ($sth,$row);
-			my $dbh=open_database();
-			$sth=$dbh->prepare("SELECT * FROM songs WHERE name LIKE ".$dbh->quote($title));
-			if(($sth)&&($sth->execute))
-				{
-				if($row=$sth->fetch)
-					{
-					$song=GenreMusicDB::Song->new(@{$row});
-					}
-				$sth->finish;
-				}
+			my $song=GenreMusicDB::Song->get($1);
 			if($song)
 				{
 				my $req = Plack::Request->new($env);
@@ -203,7 +191,7 @@ sub handle
 					next if(defined($albums{$album->id}));
 					$ok=$dbh->do("DELETE FROM album_songs WHERE songid=".$dbh->quote($song->id)." AND albumid=".$dbh->quote($album->id)) if($ok);
 					}
-				my %artists;
+				$ok=$dbh->do("DELETE FROM song_contributors WHERE songid=".$dbh->quote($song->id)) if($ok);
 				foreach my $key (keys %{$query})
 					{
 					if($key =~ /^artist_name-(\d+)/)
@@ -235,22 +223,9 @@ sub handle
 								}
 							}
 						next if(!$artist);
-						$artists{$artist->id}=1;
-						if($song->belongs_to_artist($artist))
-							{
-							$ok=$dbh->do("UPDATE song_contributors SET relationship=".$dbh->quote($query->get("artist_relationship-$id"))." WHERE songid=".$dbh->quote($song->id)." AND artistid=".$dbh->quote($artist->id)) if($ok);
-							}
-						else
-							{
-							$ok=$dbh->do("INSERT INTO song_contributors VALUES (".join(",",map $dbh->quote($_),
-								($song->id,$artist->id,$query->get("artist_relationship-$id"))).")") if($ok);
-							}
+						$ok=$dbh->do("INSERT INTO song_contributors VALUES (".join(",",map $dbh->quote($_),
+							($song->id,$artist->id,$query->get("artist_relationship-$id"))).")") if($ok);
 						}
-					}
-				foreach my $artist (@{$song->artists})
-					{
-					next if(defined($artists{$artist->id}));
-					$ok=$dbh->do("DELETE FROM song_contributors WHERE songid=".$dbh->quote($song->id)." AND artistid=".$dbh->quote($artist->id)) if($ok);
 					}
 				if($ok)
 					{
@@ -284,9 +259,9 @@ sub tags
 	my $self=shift;
 	my @tags;
 
-	if(!defined($self->{"tags"}))
+	if(!defined($self->{"_tags"}))
 		{
-		$self->{"tags"}={};
+		$self->{"_tags"}={};
 		my $dbh=open_database();
 		my ($sth,$row);
 		$sth=$dbh->prepare("SELECT DISTINCT tag FROM song_tags WHERE songid=".$dbh->quote($self->id)." ORDER BY lower(tag)");
@@ -294,15 +269,15 @@ sub tags
 			{
 			while($row=$sth->fetch)
 				{
-				$self->{"tags"}->{lc($row->[0])}=GenreMusicDB::Tag->new($row->[0]);
-				push @tags,$self->{"tags"}->{lc($row->[0])}
+				$self->{"_tags"}->{lc($row->[0])}=GenreMusicDB::Tag->new($row->[0]);
+				push @tags,$self->{"_tags"}->{lc($row->[0])}
 				}
 			$sth->finish;
 			}
 		}
 	else
 		{
-		@tags=values %{$self->{"tags"}};
+		@tags=values %{$self->{"_tags"}};
 		}
 	return \@tags;
 	}
@@ -341,18 +316,11 @@ sub belongs_to_artist
 		{
 		$artistid=$artistid->id;
 		}
-	
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT songid FROM song_contributors WHERE songid=".$dbh->quote($self->id)." AND artistid=".$dbh->quote($artistid));
-	if(($sth)&&($sth->execute))
+	if(!exists($self->{"_artists"}))
 		{
-		if($row=$sth->fetch)
-			{
-			$ret=1;
-			}
+		$self->artists();
 		}
-	return $ret;
+	return exists($self->{"_artists"}->{$artistid});
 	}
 
 sub albums
@@ -383,57 +351,74 @@ sub has_relationship
 		{
 		$artistid=$artistid->id;
 		}
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT songid FROM song_contributors WHERE songid=".$dbh->quote($self->id)." AND artistid=".$dbh->quote($artistid)." AND relationship LIKE ".$dbh->quote($relationship));
-	if(($sth)&&($sth->execute))
+	if(!exists($self->{"_artists"}))
 		{
-		if($row=$sth->fetch)
+		$self->artists();
+		}
+	foreach my $rel (@{$self->{"_artists"}->{$artistid}->{"relationship"}})
+		{
+		if($rel eq $relationship)
 			{
-			$ret=1;
+			return 1;
 			}
 		}
-	return $ret;
+	return 0;
 	}
 
 sub relationship
 	{
 	my $self=shift;
 	my $artistid=shift;
-	my $relationship=shift;
-	my $ret;
+	my $relationship;
 	
 	if(ref($artistid) eq "GenreMusicDB::Artist")
 		{
 		$artistid=$artistid->id;
 		}
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT relationship FROM song_contributors WHERE songid=".$dbh->quote($self->id)." AND artistid=".$dbh->quote($artistid));
-	if(($sth)&&($sth->execute))
+	if(!exists $self->{"_artists"})
 		{
-		if($row=$sth->fetch)
-			{
-			$ret=$row->[0];
-			}
+		$self->artists();
 		}
-	return $ret;
+	return \@{$self->{"_artists"}->{$artistid}->{"relationship"}};
 	}
 
 sub artists
 	{
 	my $self=shift;
 	my @artists;
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT * FROM artists WHERE artistid IN (SELECT artistid FROM song_contributors WHERE songid=".$dbh->quote($self->id).")");
-	if(($sth)&&($sth->execute))
+	
+	if(!exists($self->{"_artists"}))
 		{
-		while($row=$sth->fetch)
+		$self->{"_artists"}={};
+		$self->{"_relationships"}={};
+		my $dbh=open_database();
+		my ($sth,$row);
+		$sth=$dbh->prepare("SELECT artists.*,song_contributors.relationship FROM artists JOIN song_contributors ON song_contributors.artistid=artists.artistid WHERE song_contributors.songid=".$dbh->quote($self->id));
+		if(($sth)&&($sth->execute))
 			{
-			push @artists,GenreMusicDB::Artist->new(@{$row});
+			while($row=$sth->fetch)
+				{
+				if(!exists($self->{"_artists"}->{$row->[0]}))
+					{
+					$self->{"_artists"}->{$row->[0]}={
+						"artist" => GenreMusicDB::Artist->new(@{$row}),
+						"relationship" => [$row->[7]]
+						};
+					}
+				else
+					{
+					push @{$self->{"_artists"}->{$row->[0]}->{"relationship"}},$row->[7];
+					}
+				if(!exists($self->{"_relationships"}->{$row->[7]}))
+					{
+					$#{$self->{"_relationships"}->{$row->[7]}}=-1;
+					}
+				push @{$self->{"_relationships"}->{$row->[7]}},$self->{"_artists"}->{$row->[0]}->{"artist"};
+				}
+			$sth->finish;
 			}
 		}
+	@artists=map $self->{"_artists"}->{$_}->{"artist"},keys %{$self->{"_artists"}};
 	return \@artists;
 	}
 
@@ -454,4 +439,24 @@ sub all
 		}
 	return @songs;
 	}
+
+sub get
+	{
+	my $self=shift;
+	my $title=shift;
+	my ($sth,$row);
+	my $song;
+	my $dbh=open_database();
+	$sth=$dbh->prepare("SELECT * FROM songs WHERE name LIKE ".$dbh->quote($title)." OR songid=".$dbh->quote($title));
+	if(($sth)&&($sth->execute))
+		{
+		if($row=$sth->fetch)
+			{
+			$song=GenreMusicDB::Song->new(@{$row});
+			}
+		$sth->finish;
+		}
+	return $song;
+	}
+
 1;

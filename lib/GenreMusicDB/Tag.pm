@@ -2,20 +2,16 @@ package GenreMusicDB::Tag;
 
 use strict;
 use GenreMusicDB::Base;
+use GenreMusicDB::Object;
+
+our @ISA = qw(GenreMusicDB::Object);
 
 sub new
 	{
 	my $this=shift;
 	my $class=ref($this) || $this;
-	my $self=bless {},$class;
-	$self->{"name"}=shift;
+	my $self=$class->SUPER::new("",shift);
 	return $self;
-	}
-
-sub name
-	{
-	my $self=shift;
-	return $self->{"name"};
 	}
 
 sub all

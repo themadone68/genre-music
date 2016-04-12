@@ -3,21 +3,16 @@ package GenreMusicDB::Role;
 use strict;
 use GenreMusicDB::Base;
 use GenreMusicDB::User;
+use GenreMusicDB::Object;
+
+our @ISA = qw(GenreMusicDB::Object);
 
 sub new
 	{
-	my $class=shift;
-	my $self=bless {},$class;
-	$self->{"id"}=shift;
-	$self->{"name"}=shift;
-	
+	my $this=shift;
+	my $class=ref($this) || $this;
+	my $self=$class->SUPER::new(shift,shift);
 	return $self;
-	}
-
-sub id
-	{
-	my $self=shift;
-	return $self->{"id"};
 	}
 
 sub handle
@@ -226,23 +221,23 @@ sub members
 	my @members;
 	my ($sth,$row);
 	my $dbh=open_database();
-	if(!defined($self->{"members"}))
+	if(!defined($self->{"_members"}))
 		{
-		$self->{"members"}={};
-		$sth=$dbh->prepare("SELECT userid,name,email FROM users WHERE userid IN (SELECT userid FROM role_members WHERE roleid=".$dbh->quote($self->id).")");
+		$self->{"_members"}={};
+		$sth=$dbh->prepare("SELECT * FROM users WHERE userid IN (SELECT userid FROM role_members WHERE roleid=".$dbh->quote($self->id).")");
 		if(($sth)&&($sth->execute))
 			{
 			while($row=$sth->fetch)
 				{
-				$self->{"members"}->{lc($row->[0])}=GenreMusicDB::User->new(@{$row});
-				push @members,$self->{"members"}->{lc($row->[0])};
+				$self->{"_members"}->{lc($row->[0])}=GenreMusicDB::User->new(@{$row});
+				push @members,$self->{"_members"}->{lc($row->[0])};
 				}
 			$sth->finish;
 			}
 		}
 	else
 		{
-		@members=values %{$self->{"members"}};
+		@members=values %{$self->{"_members"}};
 		}
 	
 	return \@members;
@@ -257,11 +252,11 @@ sub has_member
 		{
 		$userid=$userid->id;
 		}
-	if(!defined($self->{"members"}))
+	if(!defined($self->{"_members"}))
 		{
 		$self->members();
 		}
-	return defined($self->{"members"}->{$userid});
+	return defined($self->{"_members"}->{$userid});
 	}
 
 sub get

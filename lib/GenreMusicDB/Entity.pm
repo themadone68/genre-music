@@ -1,13 +1,14 @@
 package GenreMusicDB::Entity;
 
 use GenreMusicDB::Base;
+use GenreMusicDB::Object;
+
+our @ISA = qw(GenreMusicDB::Object);
 
 sub new
 	{
 	my $class=shift;
-	my $self=bless {},$class;
-	$self->{"id"}=shift;
-	$self->{"name"}=shift;
+	my $self=$class->SUPER::new(shift,shift);
 	$self->{"description"}=shift;
 	$self->{"addedby"}=shift;
 	$self->{"added"}=shift;
@@ -25,30 +26,10 @@ sub has_tag
 		{
 		$tag=$tag->name;
 		}
-	if(!defined($self->{"tags"}))
+	if(!defined($self->{"_tags"}))
 		{
 		$self->tags();
 		}
-	log_error($tag." ".$self->{"tags"}->{lc($tag)});
-	return defined($self->{"tags"}->{lc($tag)});
+	return defined($self->{"_tags"}->{lc($tag)});
 	}
-
-sub id
-	{
-	my $self=shift;
-	return $self->{"id"};
-	}
-
-sub name
-	{
-	my $self=shift;
-	return $self->{"name"};
-	}
-
-sub description
-	{
-	my $self=shift;
-	return $self->{"description"};
-	}
-
 1;
