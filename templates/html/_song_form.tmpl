@@ -1,15 +1,18 @@
 <script><!--
 function add_new_row(elem)
   {
-  var this_id;
-  this_id=parseInt(elem.name.match(/^artist_name-([0-9]+)/)[1]);
-  if(document.forms['editsong'].elements['artist_name-'+this_id].value!='')
+  var row_parent=elem;
+  while(row_parent.parentNode.classList!='col-sm-10')
     {
-    document.forms['editsong'].elements['artist_name-'+this_id].onchange=undefined;
-    var next_id=this_id+1;
-    $(elem).parent().parent().after('[% INCLUDE _song_artist_rel.tmpl count="\'+next_id+\'"%]');
-    document.forms['editsong'].elements['artist_name-'+next_id].focus();
+    row_parent=row_parent.parentNode;
     }
+  var html="<div>"+$(row_parent).html()+"</div>";
+  var this_id;
+  this_id=parseInt(elem.name.match(/^.*-([0-9]+)$/)[1]);
+  this_id=this_id+1;
+  html=html.replace(new RegExp(' (name|id)="([^"]*)-([0-9]*)"','g'),' $1="$2-'+this_id+'"');
+  $(row_parent).after(html);
+  elem.onchange=undefined;
   }
 
 function block_tab(elem,e)
@@ -102,6 +105,16 @@ $.ajax({
     },
   });
 </script>
+</div>
+</div>
+
+<div class="form-group">
+<label class="col-sm-2 control-label">Links</label>
+<div class="col-sm-10">
+[% FOREACH link IN song.links %]
+<div><input type="url" class="form-control" name="link-[% loop.count %]" value="[%link %]"/></div>
+[% END %]
+<div><input onchange="add_new_row(this)" type="url" class="form-control" name="link-[% song.links.max()+2 %]" value=""/></div>
 </div>
 </div>
 

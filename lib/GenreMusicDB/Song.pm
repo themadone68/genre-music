@@ -227,6 +227,7 @@ sub handle
 						$ok=$dbh->do("DELETE FROM album_songs WHERE songid=".$dbh->quote($song->id)." AND albumid=".$dbh->quote($album->id)) if($ok);
 						}
 					$ok=$dbh->do("DELETE FROM song_contributors WHERE songid=".$dbh->quote($song->id)) if($ok);
+					$ok=$dbh->do("DELETE FROM song_links WHERE songid=".$dbh->quote($song->id)) if($ok);
 					foreach my $key (keys %{$query})
 						{
 						if($key =~ /^artist_name-(\d+)/)
@@ -260,6 +261,12 @@ sub handle
 							next if(!$artist);
 							$ok=$dbh->do("INSERT INTO song_contributors VALUES (".join(",",map $dbh->quote($_),
 								($song->id,$artist->id,$query->get("artist_relationship-$id"))).")") if($ok);
+							}
+						elsif(($key =~ /^link-(\d+)/)&&($query->{$key}))
+							{
+							my $id=$1;
+							$ok=$dbh->do("INSERT INTO song_links VALUES (".join(",",map $dbh->quote($_),
+								($song->id,$query->get("link-$id"))).")") if($ok);
 							}
 						}
 					}
@@ -506,6 +513,29 @@ sub get
 		$sth->finish;
 		}
 	return $song;
+	}
+
+sub links
+	{
+	my $self=shift;
+	my @links;
+	
+	if(!exists($self->{"_links"}))
+		{
+		$#{$self->{"_links"}}=-1;
+		my $dbh=open_database();
+		my ($sth,$row);
+		$sth=$dbh->prepare("SELECT * FROM song_links WHERE song_links.songid=".$dbh->quote($self->id));
+		if(($sth)&&($sth->execute))
+			{
+			while($row=$sth->fetch)
+				{
+				push @{$self->{"_links"}},$row->[1];
+				}
+			$sth->finish;
+			}
+		}
+	return $self->{"_links"};
 	}
 
 1;
