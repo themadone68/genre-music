@@ -5,7 +5,7 @@ use GenreMusicDB::Base;
 require Tie::Hash;
 our @ISA = qw(Tie::Hash);
 use vars qw ( $AUTOLOAD );
-use overload '==' => \&op_equal,fallback => 1;
+use overload '==' => \&op_equal,'eq' => \&op_equal,fallback => 1;
 
 sub new
 	{
