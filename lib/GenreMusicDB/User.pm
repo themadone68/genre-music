@@ -58,9 +58,9 @@ sub handle
 				{
 				my $req = Plack::Request->new($env);
 				my $query=$req->parameters;
-				if(($query->{"edit"})&&($env->{"REMOTE_USER"}))
+				if(($query->{"edit"})&&($curruser))
 					{
-					if($user->id eq $env->{"REMOTE_USER"})
+					if(($user==$curruser)||($curruser->has_role("admin")))
 						{
 						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
 							{mainmenu => build_mainmenu($env),user => $user});
@@ -110,6 +110,10 @@ sub handle
 				$userid=$env->{"REMOTE_USER"};
 				}
 			$user=GenreMusicDB::User->get($userid);
+			if(!(($user==$curruser)||(!$curruser->has_role("admin"))))
+				{
+				return error403($env);
+				}
 			}
 
 		if($query->{"delete"})
@@ -119,7 +123,6 @@ sub handle
 			{
 			if(!$user)
 				{
-				log_error("No user to update?");
 				return error500($env);
 				}
 			else

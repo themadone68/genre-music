@@ -7,7 +7,7 @@
 [%END%]
 </ul>
 
-[% IF user==curruser %]
+[% IF user==curruser || curruser.has_role('admin') %]
 <p><a href="[% user.editurl %]">Edit this</a></p>
 [% END %]
 [% INCLUDE _footer.tmpl %]
