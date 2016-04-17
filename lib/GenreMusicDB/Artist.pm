@@ -123,7 +123,7 @@ sub handle
 					{
 					$dbh->do("DELETE FROM artists WHERE artistid=".$dbh->quote($artist->id));
 					}
-				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}artists/"],[] ];
+				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}artists/",@additionalheaders],[] ];
 				}
 			else
 				{
@@ -177,7 +177,7 @@ sub handle
 				if($#errors==-1)
 					{
 					$dbh->do("COMMIT");
-					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$artist->url],[] ];
+					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$artist->url,@additionalheaders],[] ];
 					}
 				else
 					{

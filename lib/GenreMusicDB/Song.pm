@@ -85,7 +85,7 @@ sub handle
 						{
 						my $dbh=open_database();
 						$dbh->do("UPDATE songs SET moderated=strftime('%s','now'),moderatedby=".$dbh->quote($curruser->id)." WHERE songid=".$dbh->quote($song->id));
-						return [ 302, [ 'Location' => $env->{"HTTP_REFERER"}],[] ];
+						return [ 302, [ 'Location' => $env->{"HTTP_REFERER"},@additionalheaders],[] ];
 						}
 					}
 				elsif($query->{"delete"})
@@ -146,7 +146,7 @@ sub handle
 					{
 					$dbh->do("DELETE FROM songs WHERE songid=".$dbh->quote($song->id));
 					}
-				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}songs/"],[] ];
+				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}songs/",@additionalheaders],[] ];
 				}
 			else
 				{
@@ -273,7 +273,7 @@ sub handle
 				if($#errors==-1)
 					{
 					$dbh->do("COMMIT");
-					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$song->url],[] ];
+					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$song->url,@additionalheaders],[] ];
 					}
 				else
 					{

@@ -167,7 +167,7 @@ sub handle
 				if($ok)
 					{
 					$dbh->do("COMMIT");
-					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$album->url],[] ];
+					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$album->url,@additionalheaders],[] ];
 					}
 				else
 					{

@@ -6,10 +6,11 @@ use Template;
 use Text::Markdown qw(markdown);
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error $curruser);
+our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error $curruser @additionalheaders);
 our $sitepath;
 our $filepath;
 our $curruser;
+our @additionalheaders;
 my $dbh;
 
 sub open_database
@@ -71,11 +72,11 @@ sub load_template
 		}
 	if($template->process("$name.tmpl",$vars,\$result))
 		{
-		return [ $status, [ 'Content-Type' => $contenttype],[$result] ];
+		return [ $status, [ 'Content-Type' => $contenttype,@additionalheaders],[$result] ];
 		}
 	else
 		{
-		return [ 500, [ 'Content-Type' => $contenttype],[$template->error()] ];
+		return [ 500, [ 'Content-Type' => $contenttype,@additionalheaders],[$template->error()] ];
 		}
 	}
 

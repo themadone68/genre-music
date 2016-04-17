@@ -74,6 +74,7 @@ sub login
 				$domain =~ s%^www\.%.%;
 				my ($sth,$row);
 				my $password;
+				my $ok=$dbh->do("BEGIN IMMEDIATE");
 				my $sth=$dbh->prepare("SELECT password FROM users WHERE userid=".$dbh->quote($user->id));
 				if(($sth)&&($sth->execute))
 					{
@@ -85,12 +86,16 @@ sub login
 					}
 				
 				my $session=md5_hex(join("--",($user->id,$password,time)));
-				if($dbh->do("INSERT INTO sessions VALUES (".join(",",map $dbh->quote($_),($session,$user->id,$password,time,time,time,$env->{"REMOTE_ADDR"})).")"))
+				$ok=$dbh->do("INSERT INTO sessions VALUES (".join(",",map $dbh->quote($_),($session,$user->id,$password,time,time,time,$env->{"REMOTE_ADDR"})).")") if($ok);
+				$ok=$dbh->do("UPDATE users SET last_login=".time." WHERE userid=".$dbh->quote($user->id)) if($ok);
+				
+				if($ok)
 					{
-					my @cookies=('Set-Cookie' => "GenreMusicDB=$session; path=".$sitepath."; domain=$domain");
+					$dbh->do("COMMIT");
+					push @additionalheaders,'Set-Cookie' => "GenreMusicDB=$session; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60));
 					if($query->{"remember"})
 						{
-						push @cookies,'Set-Cookie' => "GenreMusicDBUser=".$user->id."; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60*365));
+						push @additionalheaders,'Set-Cookie' => "GenreMusicDBUser=".$user->id."; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60*365));
 						}
 					my $destination=$query->{"destination"};
 					if($destination =~ m%^$sitepath%)
@@ -108,11 +113,12 @@ sub login
 						}
 					return [ 302, [
 						'Location' => $destination,
-						@cookies,
+						@additionalheaders
 						],[] ];
 					}
 				else
 					{
+					$dbh->do("ROLLBACK");
 					return error500($env);
 					}
 				}
@@ -142,14 +148,16 @@ sub logout
 		{
 		return [ 302, [
 			'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath,
-			'Set-Cookie' => "GenreMusicDB=; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",0),
+			@additionalheaders
 			],[] ];
 		}
 	elsif($dbh->do("DELETE FROM sessions WHERE sessionid=".$dbh->quote($session)))
 		{
+		$dbh->do("UPDATE users SET last_login=".time." WHERE userid=".$dbh->quote($curruser->id));
+		push @additionalheaders,'Set-Cookie' => "GenreMusicDB=; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",0);
 		return [ 302, [
 			'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath,
-			'Set-Cookie' => "GenreMusicDB=; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",0),
+			@additionalheaders
 			],[] ];
 		}
 	else
@@ -178,7 +186,7 @@ sub static_content
 	my $mimetypes=new MIME::Types;
 	my $type=$mimetypes->mimeTypeOf($filename);
 	open my $fh, "<:raw",$filename or die $env->{"PATH_INFO"}.": ".$!;
-	return [ 200, [ 'Content-Type' => $type],$fh ];
+	return [ 200, [ 'Content-Type' => $type,@additionalheaders],$fh ];
 	}
 
 my $app = sub
@@ -192,7 +200,7 @@ my $app = sub
 		{
 		my $dbh=open_database($env);
 		my $sth;
-		$sth=$dbh->prepare("SELECT sessions.userid FROM sessions JOIN users ON sessions.userid=users.userid AND sessions.password=users.password WHERE sessionid=".$dbh->quote($session));
+		$sth=$dbh->prepare("SELECT sessions.userid,sessions.last_cookie FROM sessions JOIN users ON sessions.userid=users.userid AND sessions.password=users.password WHERE sessionid=".$dbh->quote($session));
 		if(($sth)&&($sth->execute))
 			{
 			my $row;
@@ -200,12 +208,26 @@ my $app = sub
 				{
 				$env->{"REMOTE_USER"}=$row->[0];
 				$curruser=GenreMusicDB::User->get($env->{"REMOTE_USER"});
+				$sth->finish;
+				if($curruser)
+					{
+					if(time-$row->[1]>3600)
+						{
+						my $domain=$env->{"SERVER_NAME"};
+						$domain =~ s%^www\.%.%;
+						$dbh->do("UPDATE sessions SET last_cookie=".time.",last_active=".time." WHERE sessionid=".$dbh->quote($session));
+						push @additionalheaders,'Set-Cookie' => "GenreMusicDB=$session; path=".$sitepath."; domain=$domain; expires=".Date::Format::time2str("%A, %d-%b-%Y %H:%M:%H %Z",time+(24*60*60));
+						}
+					else
+						{
+						$dbh->do("UPDATE sessions SET last_active=".time." WHERE sessionid=".$dbh->quote($session));
+						}
+					}
 				}
 			else
 				{
 				# Add some way of deleting the session cookie
 				}
-			$sth->finish;
 			}
 		}
 	if( $env->{"PATH_INFO"} =~ m%\.\./%)
@@ -226,11 +248,11 @@ my $app = sub
 		}
 	elsif(($env->{"REMOTE_USER"} =~ /^temp:/)&&($env->{"PATH_INFO"} !~ m%^/users/me.html$% ))
 		{
-		return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."users/me.html?edit=1"],[] ];
+		return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."users/me.html?edit=1",@additionalheaders],[] ];
 		}
 	elsif($env->{"PATH_INFO"} =~ m%/env.html$% )
 		{
-		return [ 200, [ 'Content-Type' => 'text/plain'],[map $_."=".$env->{$_}."\n", sort keys %{$env}] ];
+		return [ 200, [ 'Content-Type' => 'text/plain',@additionalheaders],[map $_."=".$env->{$_}."\n", sort keys %{$env}] ];
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/(index.html)?$% )
 		{

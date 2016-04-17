@@ -1,4 +1,4 @@
-CREATE TABLE users (userid NOT NULL UNIQUE PRIMARY KEY,name NOT NULL,email NOT NULL UNIQUE,password NOT NULL);
+CREATE TABLE users (userid NOT NULL UNIQUE PRIMARY KEY,name NOT NULL,email NOT NULL UNIQUE,password NOT NULL,created INTEGER NOT NULL,invitedby NOT NULL,lastlogin INTEGER NOT NULL);
 CREATE TABLE sessions (sessionid NOT NULL UNIQUE PRIMARY KEY,userid NOT NULL,password NOT NULL,created INTEGER,last_active INTEGER,last_cookie INTEGER,ipaddr NOT NULL);
 CREATE TABLE songs (songid INTEGER NOT NULL UNIQUE PRIMARY KEY,name NOT NULL,description,addedby NOT NULL,added INTEGER NOT NULL,moderatedby NOT NULL,moderated INTEGER);
 CREATE TABLE albums (albumid INTEGER NOT NULL UNIQUE PRIMARY KEY,name NOT NULL,description,addedby NOT NULL,added INTEGER NOT NULL,moderatedby NOT NULL,moderated INTEGER);
@@ -28,6 +28,7 @@ CREATE TRIGGER users_userid_upd AFTER UPDATE OF userid ON users
     UPDATE album_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE artist_tags SET addedby=new.userid WHERE addedby=old.userid;
     UPDATE role_members SET userid=new.userid WHERE userid=old.userid;
+    UPDATE users SET invitedby=new.userid WHERE invitedby=old.userid;
   END;
 
 DROP TRIGGER songs_songid_upd;

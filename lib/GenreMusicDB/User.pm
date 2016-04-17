@@ -197,7 +197,7 @@ sub handle
 					if($ok)
 						{
 						$dbh->do("COMMIT");
-						return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$user->url],[] ];
+						return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$user->url,@additionalheaders],[] ];
 						}
 					else
 						{
@@ -224,8 +224,8 @@ sub handle
 					my $salt=$saltchars[int(rand($#saltchars+1))].$saltchars[int(rand($#saltchars+1))];
 					my $newpassword=int(rand(100000));
 					my $password=crypt($newpassword,$salt);
-					$ok=$dbh->do("INSERT INTO users (userid,name,email,password) VALUES (".join(",",map $dbh->quote($_),
-						($newid,$query->{"name"},$query->{"email"},$password)).")") if($ok);
+					$ok=$dbh->do("INSERT INTO users VALUES (".join(",",map $dbh->quote($_),
+						($newid,$query->{"name"},$query->{"email"},$password,time,$curruser->id,0)).")") if($ok);
 					$user=GenreMusicDB::User->new($newid,$query->{"name"},$query->{"email"},"");
 					if($ok)
 						{
@@ -269,7 +269,7 @@ sub handle
 								$mimemail->print(\*MAIL);
 								close(MAIL);
 								$dbh->do("COMMIT");
-								return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."invite_sent.html"],[] ];
+								return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$sitepath."invite_sent.html",@additionalheaders],[] ];
 								}
 							else
 								{

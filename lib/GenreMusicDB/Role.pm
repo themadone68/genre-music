@@ -173,7 +173,7 @@ sub handle
 				if($ok)
 					{
 					$dbh->do("COMMIT");
-					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$role->url],[] ];
+					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$role->url,@additionalheaders],[] ];
 					}
 				else
 					{
