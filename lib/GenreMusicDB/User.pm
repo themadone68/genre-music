@@ -434,7 +434,7 @@ sub roles
 			$sth->finish;
 			}
 		}
-	@roles=values %{$self->{"_roles"}};
+	@roles=sort {lc($a->name) cmp lc($b->name)} values %{$self->{"_roles"}};
 	return \@roles;
 	}
 
