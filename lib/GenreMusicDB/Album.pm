@@ -196,25 +196,25 @@ sub tags
 	my $self=shift;
 	my @tags;
 
-	if(!defined($self->{"tags"}))
+	if(!defined($self->{"_tags"}))
 		{
-		$self->{"tags"}={};
+		$self->{"_tags"}={};
 		my $dbh=open_database();
 		my ($sth,$row);
-		$sth=$dbh->prepare("SELECT DISTINCT tag FROM album_tags WHERE albumid=".$dbh->quote($self->{"id"})." ORDER BY lower(tag)");
+		$sth=$dbh->prepare("SELECT DISTINCT tag FROM album_tags WHERE albumid=".$dbh->quote($self->id)." ORDER BY lower(tag)");
 		if(($sth)&&($sth->execute))
 			{
 			while($row=$sth->fetch)
 				{
-				$self->{"tags"}->{lc($row->[0])}=$row->[0];
-				push @tags,$row->[0];
+				$self->{"_tags"}->{lc($row->[0])}=GenreMusicDB::Tag->new($row->[0]);
+				push @tags,$self->{"_tags"}->{lc($row->[0])}
 				}
 			$sth->finish;
 			}
 		}
 	else
 		{
-		@tags=values %{$self->{"tags"}};
+		@tags=values %{$self->{"_tags"}};
 		}
 	return \@tags;
 	}
@@ -225,17 +225,11 @@ sub has_song
 	my $songid=shift;
 	my $ret=0;
 	
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT songid FROM album_albums WHERE albumid=".$dbh->quote($self->id)." AND songid=".$dbh->quote($songid));
-	if(($sth)&&($sth->execute))
+	if(!defined($self->{"_songs"}))
 		{
-		if($row=$sth->fetch)
-			{
-			$ret=1;
-			}
+		$self->songs();
 		}
-	return $ret;
+	return(defined($self->{"_songs"}->{$songid}));
 	}
 
 sub create
@@ -292,6 +286,26 @@ sub get
 		$sth->finish;
 		}
 	return $ret;
+	}
+
+sub songs
+	{
+	my $self=shift;
+	my $dbh=open_database();
+	my ($sth,$row);
+	if(!defined($self->{"_songs"}))
+		{
+		$self->{"_songs"}={};
+		$sth=$dbh->prepare("SELECT * FROM songs WHERE songid IN (SELECT songid FROM album_songs WHERE albumid=".$dbh->quote($self->id).")");
+		if(($sth)&&($sth->execute))
+			{
+			if($row=$sth->fetch)
+				{
+				$self->{"_songs"}->{$row->[0]}=GenreMusicDB::Song->new(@{$row});
+				}
+			}
+		}
+	return values %{$self->{"_songs"}};
 	}
 
 1;

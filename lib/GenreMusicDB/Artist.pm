@@ -70,7 +70,7 @@ sub handle
 					{
 					my @alltags;
 				
-					@alltags=GenreMusicDB::Tag->all(@{$artist->tags});
+					@alltags=GenreMusicDB::Tag->all();
 					return load_template($env,200,"html","artist_edit","Edit ".$artist->{"name"},
 						{mainmenu => build_mainmenu($env),artist => $artist,tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
@@ -99,36 +99,36 @@ sub handle
 		my $req = Plack::Request->new($env);
 		my $query=$req->parameters;
 		my $dbh=open_database();
-		if($query->{"delete"})
+		my $artist;
+		if($env->{"PATH_INFO"} =~ m%^/artists/((new|index).html)?$%)
 			{
+			$artist=GenreMusicDB::Artist->new();
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/artists/(.*?)(\.html)?$%)
+			{
+			my $artistid=$1;
+			my ($sth,$row);
+			$artist=GenreMusicDB::Artist->get($artistid);
+			}
+
+		if(!$artist)
+			{
+			return error500($env);
 			}
 		else
 			{
-			my $artist;
-			if($query->{"artistid"})
+			if($query->{"delete"})
 				{
-				my ($sth,$row);
-				$sth=$dbh->prepare("SELECT * FROM artists WHERE artistid=".$dbh->quote($query->{"artistid"}));
-				if(($sth)&&($sth->execute))
+				if($query->{"confirm"} eq "Yes")
 					{
-					if($row=$sth->fetch)
-						{
-						$artist=GenreMusicDB::Artist->new(@{$row});
-						}
-					$sth->finish;
+					$dbh->do("DELETE FROM artists WHERE artistid=".$dbh->quote($artist->id));
 					}
-				}
-			else
-				{
-				$artist=GenreMusicDB::Artist->new();
-				}
-			if(!$artist)
-				{
-				return error500($env);
+				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}artists/"],[] ];
 				}
 			else
 				{
 				my $ok=$dbh->do("BEGIN");
+				my @errors;
 				if($artist->id)
 					{
 					$ok=$dbh->do("UPDATE artists SET ".join(",",map $_."=".$dbh->quote($query->{$_}),
@@ -137,34 +137,44 @@ sub handle
 				else
 					{
 					$ok=$dbh->do("INSERT INTO artists VALUES (".join(",",map $dbh->quote($_),
-						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0)).")") if($ok);
-					$artist=GenreMusicDB::Artist->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
-					}
-				my %tags;
-				foreach my $tag (@{$artist->tags})
-					{
-					$tags{lc($tag)}=0;
-					}
-				foreach my $tag ($query->get_all("tags"))
-					{
-					next if($tag =~ /^\s*$/);
-					if(defined($tags{lc($tag)}))
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,($curruser->has_role("moderator") ? $curruser->id : ""),($curruser->has_role("moderator") ? time : 0))).")") if($ok);
+					if($ok)
 						{
-						$tags{lc($tag)}=1;
-						next;
-						}
-					$tags{lc($tag)}=1;
-					$ok=$dbh->do("INSERT INTO artist_tags VALUES (".join(",",map $dbh->quote($_),
-						($artist->id,$tag,$env->{"REMOTE_USER"},time)).")") if($ok);
-					}
-				foreach my $tag (keys %tags)
-					{
-					if($tags{lc($tag)}==0)
-						{
-						$ok=$dbh->do("DELETE FROM artist_tags WHERE artistid=".$dbh->quote($artist->id)." AND tag LIKE ".$dbh->quote($tag)) if($ok);
+						$artist=GenreMusicDB::Artist->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
 						}
 					}
 				if($ok)
+					{
+					my %tags;
+					foreach my $tag (@{$artist->tags})
+						{
+						$tags{lc($tag)}=0;
+						}
+					foreach my $tag ($query->get_all("tags"))
+						{
+						next if($tag =~ /^\s*$/);
+						if(defined($tags{lc($tag)}))
+							{
+							$tags{lc($tag)}=1;
+							next;
+							}
+						$tags{lc($tag)}=1;
+						$ok=$dbh->do("INSERT INTO artist_tags VALUES (".join(",",map $dbh->quote($_),
+							($artist->id,$tag,$env->{"REMOTE_USER"},time)).")") if($ok);
+						}
+					foreach my $tag (keys %tags)
+						{
+						if($tags{lc($tag)}==0)
+							{
+							$ok=$dbh->do("DELETE FROM artist_tags WHERE artistid=".$dbh->quote($artist->id)." AND tag LIKE ".$dbh->quote($tag)) if($ok);
+							}
+						}
+					}
+				else
+					{
+					push @errors,"Database error: ".$DBI::errstr;
+					}
+				if($#errors==-1)
 					{
 					$dbh->do("COMMIT");
 					return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}.$artist->url],[] ];
@@ -172,7 +182,13 @@ sub handle
 				else
 					{
 					$dbh->do("ROLLBACK");
-					return error500($env);
+					my @alltags;
+					my @allalbums;
+					my @allartists;
+				
+					@alltags=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Tag->all();
+					return load_template($env,200,"html","artist_edit","Edit ".$artist->{"name"},
+						{mainmenu => build_mainmenu($env),artist => $artist,errors => \@errors,tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
 				}
 			}
@@ -196,9 +212,9 @@ sub tags
 	my $self=shift;
 	my @tags;
 
-	if(!defined($self->{"tags"}))
+	if(!defined($self->{"_tags"}))
 		{
-		$self->{"tags"}={};
+		$self->{"_tags"}={};
 		my $dbh=open_database();
 		my ($sth,$row);
 		$sth=$dbh->prepare("SELECT DISTINCT tag FROM artist_tags WHERE artistid=".$dbh->quote($self->id)." ORDER BY lower(tag)");
@@ -206,15 +222,15 @@ sub tags
 			{
 			while($row=$sth->fetch)
 				{
-				$self->{"tags"}->{lc($row->[0])}=$row->[0];
-				push @tags,$row->[0];
+				$self->{"_tags"}->{lc($row->[0])}=GenreMusicDB::Tag->new($row->[0]);
+				push @tags,$self->{"_tags"}->{lc($row->[0])}
 				}
 			$sth->finish;
 			}
 		}
 	else
 		{
-		@tags=values %{$self->{"tags"}};
+		@tags=sort {lc($a->name) cmp lc($b->name)} values %{$self->{"_tags"}};
 		}
 	return \@tags;
 	}
@@ -225,17 +241,11 @@ sub has_song
 	my $songid=shift;
 	my $ret=0;
 	
-	my $dbh=open_database();
-	my ($sth,$row);
-	$sth=$dbh->prepare("SELECT songid FROM song_contributors WHERE artistid=".$dbh->quote($self->id)." AND songid=".$dbh->quote($songid));
-	if(($sth)&&($sth->execute))
+	if(!defined($self->{"_songs"}))
 		{
-		if($row=$sth->fetch)
-			{
-			$ret=1;
-			}
+		$self->songs();
 		}
-	return $ret;
+	return(defined($self->{"_songs"}->{$songid}));
 	}
 
 sub create
@@ -282,7 +292,7 @@ sub get
 	my ($sth,$row);
 	my $ret;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM artists WHERE artistid=".$dbh->quote($id));
+	$sth=$dbh->prepare("SELECT * FROM artists WHERE name LIKE ".$dbh->quote($id)." OR artistid=".$dbh->quote($id));
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -292,6 +302,26 @@ sub get
 		$sth->finish;
 		}
 	return $ret;
+	}
+
+sub songs
+	{
+	my $self=shift;
+	my $dbh=open_database();
+	my ($sth,$row);
+	if(!defined($self->{"_songs"}))
+		{
+		$self->{"_songs"}={};
+		$sth=$dbh->prepare("SELECT * FROM songs WHERE songid IN (SELECT songid FROM song_contributors WHERE artistid=".$dbh->quote($self->id).")");
+		if(($sth)&&($sth->execute))
+			{
+			if($row=$sth->fetch)
+				{
+				$self->{"_songs"}->{$row->[0]}=GenreMusicDB::Song->new(@{$row});
+				}
+			}
+		}
+	return values %{$self->{"_songs"}};
 	}
 
 1;

@@ -3,6 +3,7 @@ package GenreMusicDB::Base;
 use Exporter 'import';
 use Apache::DBI;
 use Template;
+use Text::Markdown qw(markdown);
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(open_database load_template build_mainmenu error401 error403 error404 error500 $sitepath $filepath htmlencode cgiencode log_error $curruser);
@@ -35,6 +36,7 @@ sub load_template
 			{
 			"htmlencode" => \&htmlencode,
 			"cgiencode" => \&cgiencode,
+			"markdown2html" => \&markdown2html,
 			}
 		});
 	my $vars=
@@ -193,5 +195,12 @@ sub log_error
 		print STDERR join("",@_),"\n";
 		}
 	}
+
+sub markdown2html
+	{
+	my $input=shift;
+	return markdown($input);
+	}
+
 
 1;

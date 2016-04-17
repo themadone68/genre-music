@@ -1,23 +1,34 @@
 [% INCLUDE _header.tmpl %]
-<h2>Description</h2>
-<p>[% song.description || "No description" %]</p>
-<h2>Tags</h2>
-<ul>
+<div class="col-md-6 pull-right">
+<div class="panel panel-default">
+<div class="panel-heading"><h2 class="panel-title">Albums</h2></div>
+<div class="panel-body">
+<ul class="list-group" style="margin-bottom: 0px;">
+[% FOREACH album IN song.albums %]
+<li class="list-group-item"><a href="[% album.url %]">[% FILTER htmlencode %][% album.name %][%END %]</a></li>
+[%END%]
+</ul>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading"><h2 class="panel-title">Artists</h2></div>
+<div class="panel-body">
+<ul class="list-group" style="margin-bottom: 0px;">
+[% FOREACH artist IN song.artists %]
+<li class="list-group-item"><a href="[% artist.url %]">[% SET notfirst=0 %][% FILTER htmlencode %][% artist.name %][%END %]</a> ([% FOREACH relationship IN song.relationship(artist)%][% IF notfirst %],[%END%][% FILTER htmlencode %][% relationship %][%END%][% SET notfirst=1 %][%END%])</li>
+[%END%]
+</ul>
+</div>
+</div>
+</div>
+[% FILTER markdown2html %][% song.description || "No description" %][% END %]
+[% IF song.tags.size %]
+<ul class="list-inline">
+<li><strong>Tags</strong></li>
 [% FOREACH tag IN song.tags %]
 <li><a href="[% tag.url %]">[% FILTER htmlencode %][% tag.name %][% END %]</a></li>
 [%END%]
 </ul>
-<h2>Albums</h2>
-<ul>
-[% FOREACH album IN song.albums %]
-<li><a href="[% album.url %]">[% FILTER htmlencode %][% album.name %][%END %]</a></li>
 [%END%]
-</ul>
-<h2>Artists</h2>
-<ul>
-[% FOREACH artist IN song.artists %]
-<li><a href="[% artist.url %]">[% SET notfirst=0 %][% FILTER htmlencode %][% artist.name %][%END %]</a> ([% FOREACH relationship IN song.relationship(artist)%][% IF notfirst %],[%END%][% FILTER htmlencode %][% relationship %][%END%][% SET notfirst=1 %][%END%])</li>
-[%END%]
-</ul>
 <p><a href="[% song.editurl %]">Edit this</a></p>
 [% INCLUDE _footer.tmpl %]

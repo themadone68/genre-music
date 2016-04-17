@@ -1,11 +1,24 @@
 [% INCLUDE _header.tmpl %]
-<h2>Description</h2>
-<p>[% album.description || "No description" %]</p>
-<h2>Tags</h2>
-<ul>
-[% FOREACH tag IN album.tags %]
-<li>[% tag %]</li>
+<div class="col-md-6 pull-right">
+<div class="panel panel-default">
+<div class="panel-heading"><h2 class="panel-title">Songs</h2></div>
+<div class="panel-body">
+<ul class="list-group" style="margin-bottom: 0px;">
+[% FOREACH song IN album.songs %]
+<li class="list-group-item"><a href="[% song.url %]">[% FILTER htmlencode %][% song.name %][%END %]</a></li>
 [%END%]
 </ul>
+</div>
+</div>
+</div>
+[% FILTER markdown2html %][% album.description || "No description" %][% END %]
+[% IF album.tags.size %]
+<ul class="list-inline">
+<li><strong>Tags</strong></li>
+[% FOREACH tag IN album.tags %]
+<li><a href="[% tag.url %]">[% FILTER htmlencode %][% tag.name %][% END %]</a></li>
+[%END%]
+</ul>
+[%END%]
 <p><a href="[% album.editurl %]">Edit this</a></p>
 [% INCLUDE _footer.tmpl %]

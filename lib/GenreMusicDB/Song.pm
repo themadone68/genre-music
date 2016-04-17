@@ -39,13 +39,11 @@ sub handle
 				{
 				my @alltags;
 				my @allalbums;
-				my @allartists;
 				
 				@alltags=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Tag->all();
 				@allalbums=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
-				@allartists=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
 				return load_template($env,200,"html","song_new","Add a Song",
-					{mainmenu => build_mainmenu($env),tags => \@alltags,albums => \@allalbums,artists => \@allartists,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
+					{mainmenu => build_mainmenu($env),tags => \@alltags,albums => \@allalbums,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 				}
 			else
 				{
@@ -63,11 +61,9 @@ sub handle
 					{
 					my @alltags;
 					my @allalbums;
-					my @allartists;
 				
 					@alltags=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Tag->all();
 					@allalbums=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
-					@allartists=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
 					return load_template($env,200,"html","song_edit","Edit ".$song->{"name"},
 						{mainmenu => build_mainmenu($env),song => $song,tags => \@alltags,albums => \@allalbums,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
@@ -284,11 +280,9 @@ sub handle
 					$dbh->do("ROLLBACK");
 					my @alltags;
 					my @allalbums;
-					my @allartists;
 				
 					@alltags=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Tag->all();
 					@allalbums=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
-					@allartists=sort {lc($a->name) cmp lc($b->name)} GenreMusicDB::Album->all();
 					return load_template($env,200,"html","song_edit","Edit ".$song->{"name"},
 						{mainmenu => build_mainmenu($env),song => $song,errors => \@errors,tags => \@alltags,albums => \@allalbums,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
