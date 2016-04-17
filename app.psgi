@@ -196,6 +196,7 @@ my $app = sub
 	$sitepath=$env->{"SCRIPT_NAME"} || "/";
 	$filepath=($env->{"DOCUMENT_ROOT"} || ".").$sitepath;
 	$curruser=undef;
+	$#additionalheaders=-1;
 	if($session)
 		{
 		my $dbh=open_database($env);
