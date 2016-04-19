@@ -269,11 +269,11 @@ sub create
 sub all
 	{
 	my $self=shift;
-	my $where=shift;
+	my $filter=shift;
 	my ($sth,$row);
 	my @artists;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM artists".($where ? " WHERE $where" : "")." ORDER BY moderated DESC,added DESC");
+	$sth=$dbh->prepare("SELECT * FROM artists $filter");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -282,7 +282,7 @@ sub all
 			}
 		$sth->finish;
 		}
-	return @artists;
+	return sort {$b->moderated <=> $a->moderated or $b->added <=> $a->added} @artists;
 	}
 
 sub get

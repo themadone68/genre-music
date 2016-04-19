@@ -474,11 +474,11 @@ sub artists
 sub all
 	{
 	my $self=shift;
-	my $where=shift;
+	my $filter=shift;
 	my @songs;
 	my ($sth,$row);
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM songs".($where ? " WHERE $where" : "")." ORDER BY moderated DESC,added DESC");
+	$sth=$dbh->prepare("SELECT * FROM songs $filter");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -487,7 +487,7 @@ sub all
 			}
 		$sth->finish;
 		}
-	return @songs;
+	return sort {$b->moderated <=> $a->moderated or $b->added <=> $a->added} @songs;
 	}
 
 sub get

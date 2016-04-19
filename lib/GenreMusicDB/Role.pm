@@ -200,10 +200,11 @@ sub editurl
 sub all
 	{
 	my $self=shift;
+	my $filter=shift;
 	my ($sth,$row);
 	my @roles;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM roles ORDER BY lower(name)");
+	$sth=$dbh->prepare("SELECT * FROM roles $filter");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -212,7 +213,7 @@ sub all
 			}
 		$sth->finish;
 		}
-	return @roles;
+	return sort {lc($a->name) cmp lc($b->name)} @roles;
 	}
 
 sub members

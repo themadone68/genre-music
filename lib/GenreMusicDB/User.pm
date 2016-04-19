@@ -341,10 +341,11 @@ sub is_temporary
 sub all
 	{
 	my $self=shift;
+	my $filter=shift;
 	my ($sth,$row);
 	my @users;
 	my $dbh=open_database();
-	$sth=$dbh->prepare("SELECT * FROM users ORDER BY lower(name)");
+	$sth=$dbh->prepare("SELECT * FROM users $filter");
 	if(($sth)&&($sth->execute))
 		{
 		while($row=$sth->fetch)
@@ -353,7 +354,7 @@ sub all
 			}
 		$sth->finish;
 		}
-	return @users;
+	return sort {lc($a->name) cmp lc($b->name)} @users;
 	}
 
 sub has_password
