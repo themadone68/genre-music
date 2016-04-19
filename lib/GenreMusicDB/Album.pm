@@ -70,7 +70,7 @@ sub handle
 					{
 					my @alltags;
 				
-					@alltags=GenreMusicDB::Tag->all(@{$album->tags});
+					@alltags=GenreMusicDB::Tag->all();
 					return load_template($env,200,"html","album_edit","Edit ".$album->{"name"},
 						{mainmenu => build_mainmenu($env),album => $album,tags => \@alltags,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 					}
