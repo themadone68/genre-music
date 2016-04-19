@@ -22,23 +22,30 @@ sub homepage
 	
 	if(($curruser)&&($curruser->has_role("moderator")))
 		{
-		foreach my $song (GenreMusicDB::Song->all("moderated=0"))
+		foreach my $song (GenreMusicDB::Song->all("WHERE moderated=0"))
 			{
 			push @unmoderated,$song;
 			}
-		foreach my $album (GenreMusicDB::Album->all("moderated=0"))
+		foreach my $album (GenreMusicDB::Album->all("WHERE moderated=0"))
 			{
 			push @unmoderated,$album;
 			}
-		foreach my $artist (GenreMusicDB::Artist->all("moderated=0"))
+		foreach my $artist (GenreMusicDB::Artist->all("WHERE moderated=0"))
 			{
 			push @unmoderated,$artist;
 			}
 		@unmoderated=sort { $a->added <=> $b->added } @unmoderated;
 		}
-	foreach my $song (GenreMusicDB::Song->all("moderated>strftime('%s','now','-7 days')"))
+	foreach my $song (GenreMusicDB::Song->all("WHERE moderated>strftime('%s','now','-7 days')"))
 		{
 		push @newsongs,$song;
+		}
+	if($#newsongs<5)
+		{
+		foreach my $song (GenreMusicDB::Song->all("WHERE moderated>0 AND moderated<strftime('%s','now','-7 days') LIMIT ".(4-$#newsongs)))
+			{
+			push @newsongs,$song;
+			}
 		}
 
 	return load_template($env,200,"html","homepage","Genre Music Database",
