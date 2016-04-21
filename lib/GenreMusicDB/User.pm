@@ -66,8 +66,9 @@ sub handle
 					{
 					if(($user==$curruser)||($curruser->has_role("admin")))
 						{
+						my @allroles=GenreMusicDB::Role->all();
 						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
-							{mainmenu => build_mainmenu($env),user => $user});
+							{mainmenu => build_mainmenu($env),user => $user,roles => \@allroles,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 						}
 					else
 						{
@@ -136,6 +137,19 @@ sub handle
 					{
 					my @validfields;
 					my @errors;
+
+					$ok=$dbh->do("DELETE FROM role_members WHERE userid=".$dbh->quote($user->id)) if($ok);
+					foreach my $role ($query->get_all("roles"))
+						{
+						next if($role =~ /^\s*$/);
+						$ok=$dbh->do("INSERT INTO role_members VALUES (".join(",",map $dbh->quote($_),
+							($role,$user->id)).")") if($ok);
+						}
+					if(!$ok)
+						{
+						push @errors,"Database error";
+						}
+
 					if($user->is_temporary)
 						{
 						if($query->{"userid"} =~ /^[a-zA-Z0-9_-]+$/)
@@ -197,8 +211,9 @@ sub handle
 					else
 						{
 						$dbh->do("ROLLBACK");
+						my @allroles=GenreMusicDB::Role->all();
 						return load_template($env,200,"html","user_edit",(!$user->is_temporary ? "Edit profile" : "Finish Registration"),
-							{mainmenu => build_mainmenu($env),user => $user,errors => \@errors});
+							{mainmenu => build_mainmenu($env),user => $user,errors => \@errors,roles => \@allroles,jquery=> 1,javascript=>"<script type=\"text/javascript\" src=\"".$sitepath."combomultibox.js\"></script>"});
 						}
 
 					if($ok)
