@@ -19,6 +19,7 @@ sub homepage
 	my $env=shift;
 	my @unmoderated;
 	my @newsongs;
+	my $dbh=open_database();
 	
 	if(($curruser)&&($curruser->has_role("moderator")))
 		{
@@ -36,13 +37,13 @@ sub homepage
 			}
 		@unmoderated=sort { $a->added <=> $b->added } @unmoderated;
 		}
-	foreach my $song (GenreMusicDB::Song->all("WHERE moderated>strftime('%s','now','-7 days')"))
+	foreach my $song (GenreMusicDB::Song->all("WHERE moderated>strftime('%s','now','-7 days')".($curruser ? " OR (addedby=".$dbh->quote($curruser->id)." AND added>strftime('%s','now','-7 days'))" : "")))
 		{
 		push @newsongs,$song;
 		}
 	if($#newsongs<5)
 		{
-		foreach my $song (GenreMusicDB::Song->all("WHERE moderated>0 AND moderated<strftime('%s','now','-7 days') LIMIT ".(4-$#newsongs)))
+		foreach my $song (GenreMusicDB::Song->all("WHERE (moderated>0 AND moderated<strftime('%s','now','-7 days'))".($curruser ? " OR (addedby=".$dbh->quote($curruser->id)." AND added<strftime('%s','now','-7 days'))" : "")." LIMIT ".(4-$#newsongs)))
 			{
 			push @newsongs,$song;
 			}
