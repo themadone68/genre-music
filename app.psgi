@@ -230,6 +230,7 @@ my $app = sub
 					else
 						{
 						$dbh->do("UPDATE sessions SET last_active=".time." WHERE sessionid=".$dbh->quote($session));
+						$dbh->do("UPDATE users SET last_login=".time." WHERE userid=".$dbh->quote($curruser->id));
 						}
 					}
 				}
