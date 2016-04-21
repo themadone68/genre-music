@@ -2,6 +2,7 @@ package GenreMusicDB::Entity;
 
 use GenreMusicDB::Base;
 use GenreMusicDB::Object;
+use GenreMusicDB::User;
 use Date::Format qw(time2str);
 
 our @ISA = qw(GenreMusicDB::Object);
@@ -15,6 +16,14 @@ sub new
 	$self->{"added"}=shift;
 	$self->{"moderatedby"}=shift;
 	$self->{"moderated"}=shift;
+	if(ref($self->{"addedby"}) ne "GenreMusicDB::User")
+		{
+		$self->{"addedby"}=GenreMusicDB::User->get($self->{"addedby"});
+		}
+	if(ref($self->{"moderatedby"}) ne "GenreMusicDB::User")
+		{
+		$self->{"moderatedby"}=GenreMusicDB::User->get($self->{"moderatedby"});
+		}
 	
 	return $self;
 	}
