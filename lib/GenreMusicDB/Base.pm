@@ -90,6 +90,7 @@ sub build_mainmenu
 		@menu=
 			(
 			{ url => "/", name => "Home" },
+			{ url => "/search.html", name => "Search" },
 			{ url => "/songs/new.html", name => "Add Song" },
 			{ url => "/users/new.html", name => "Invite" },
 			{ url => "/users/me.html", name => "Profile" },
@@ -101,6 +102,7 @@ sub build_mainmenu
 		@menu=
 			(
 			{ url => "/", name => "Home" },
+			{ url => "/search.html", name => "Search" },
 			{ url => "/login.html", name => "Login" },
 			);
 		}

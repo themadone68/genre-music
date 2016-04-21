@@ -53,6 +53,35 @@ sub homepage
 		{mainmenu => build_mainmenu($env),unmoderated => \@unmoderated,newsongs => \@newsongs});
 	}
 
+sub search
+	{
+	my $env=shift;
+	my $req = Plack::Request->new($env);
+	my $query=$req->parameters;
+	my @results;
+	my $dbh=open_database();
+	
+	if($query->{"search"} ne "")
+		{
+		foreach my $song (GenreMusicDB::Song->all("WHERE name LIKE ".$dbh->quote("%".$query->{"search"}."%")))
+			{
+			push @results,$song;
+			}
+		foreach my $album (GenreMusicDB::Album->all("WHERE name LIKE ".$dbh->quote("%".$query->{"search"}."%")))
+			{
+			push @results,$album;
+			}
+		foreach my $artist (GenreMusicDB::Artist->all("WHERE name LIKE ".$dbh->quote("%".$query->{"search"}."%")))
+			{
+			push @results,$artist;
+			}
+		@results=sort { $a->added <=> $b->added } @results;
+		}
+		
+	return load_template($env,200,"html","search","Search",
+		{mainmenu => build_mainmenu($env),search => $query->{"search"},results => \@results});
+	}
+
 sub login
 	{
 	my $env=shift;
@@ -267,6 +296,10 @@ my $app = sub
 	elsif($env->{"PATH_INFO"} =~ m%^/(index.html)?$% )
 		{
 		return homepage($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/search.html$% )
+		{
+		return search($env);
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/login.html$% )
 		{
