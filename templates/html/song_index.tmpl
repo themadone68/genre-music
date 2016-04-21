@@ -4,13 +4,13 @@
 <table class="table">
 <tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
 [% FOREACH song IN songs %]
-[% IF song.moderated || (curruser && curruser.has_role("moderator")) %]
+[% IF song.moderated || (curruser && curruser.has_role("moderator")) || curruser==song.addedby %]
 <tr>
 <td>[% song.link %]</td>
 <td>[% song.formatted_added %]</td>
 <td>[% IF curruser %]<div class="btn-group">
 <a href="[% FILTER htmlencode %][% song.editurl %][%END%]" class="btn btn-default">Edit</a>
-[% IF !song.moderated %]
+[% IF !song.moderated && (curruser && curruser.has_role("moderator")) %]
 <a href="[% FILTER htmlencode %][% song.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
 [% END %]
 <a href="[% FILTER htmlencode %][% song.url %]?delete=1[%END%]" class="btn btn-default">Delete</a>
