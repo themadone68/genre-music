@@ -5,6 +5,7 @@ use GenreMusicDB::Base;
 use GenreMusicDB::Object;
 use GenreMusicDB::Role;
 use MIME::Entity;
+use Date::Format qw(time2str);
 
 our @ISA = qw(GenreMusicDB::Object);
 my @saltchars=("0".."9","a".."z","A".."Z");
@@ -16,6 +17,9 @@ sub new
 	my $self=$class->SUPER::new(shift,shift);
 	$self->{"email"}=shift;
 	$self->{"password"}=shift;
+	$self->{"created"}=shift;
+	$self->{"invitedby"}=shift;
+	$self->{"last_login"}=shift;
 	return $self;
 	}
 
@@ -455,4 +459,9 @@ sub has_role
 	return defined($self->{"_roles"}->{$roleid});
 	}
 
+sub formatted_last_login
+	{
+	my $self=shift;
+	return time2str("%Y/%m/%d %H:%M",$self->last_login);
+	}
 1;
