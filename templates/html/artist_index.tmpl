@@ -1,9 +1,22 @@
 [% INCLUDE _header.tmpl %]
 <p>Here are a list of artists</p>
 
-<table>
+<table class="table">
+<tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
 [% FOREACH artist IN artists %]
-<tr><td><a href="[% artist.url %]">[% FILTER htmlencode %][% artist.name %][%END%]</a></td></tr>
+[% IF artist.moderated || (curruser && (curruser.has_role("moderator") || curruser.has_role("admin"))) || curruser==artist.addedby %]
+<tr>
+<td>[% artist.link %]</td>
+<td>[% artist.formatted_added %]</td>
+<td>[% IF curruser %]<div class="btn-group">
+<a href="[% FILTER htmlencode %][% artist.editurl %][%END%]" class="btn btn-default">Edit</a>
+[% IF !artist.moderated && (curruser && (curruser.has_role("moderator")||curruser.has_role("admin"))) %]
+<a href="[% FILTER htmlencode %][% artist.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+[% END %]
+<a href="[% FILTER htmlencode %][% artist.url %]?delete=1[%END%]" class="btn btn-default">Delete</a>
+[% END %]</td>
+</tr>
+[% END %]
 [% END %]
 </table>
 

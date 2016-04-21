@@ -78,6 +78,39 @@ sub handle
 					{
 					return error401($env);
 					}
+				elsif($query->{"moderate"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					elsif(!($curruser->has_role("moderator")||$curruser->has_role("admin")))
+						{
+						return error403($env);
+						}
+					else
+						{
+						my $dbh=open_database();
+						$dbh->do("UPDATE albums SET moderated=strftime('%s','now'),moderatedby=".$dbh->quote($curruser->id)." WHERE albumid=".$dbh->quote($album->id));
+						return [ 302, [ 'Location' => $env->{"HTTP_REFERER"},@additionalheaders],[] ];
+						}
+					}
+				elsif($query->{"delete"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					elsif(!(($curruser==$album->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
+						{
+						return error403($env);
+						}
+					else
+						{
+						return load_template($env,200,"html","album_delete","Delete ".$album->{"name"}."?",
+							{mainmenu => build_mainmenu($env),album => $album});
+						}
+					}
 				else
 					{
 					return load_template($env,200,"html","album",$album->{"name"},
@@ -99,32 +132,31 @@ sub handle
 		my $req = Plack::Request->new($env);
 		my $query=$req->parameters;
 		my $dbh=open_database();
-		if($query->{"delete"})
+		my $album;
+		if($env->{"PATH_INFO"} =~ m%^/albums/((new|index).html)?$%)
 			{
+			$album=GenreMusicDB::Album->new();
+			}
+		elsif($env->{"PATH_INFO"} =~ m%^/albums/(.*?)(\.html)?$%)
+			{
+			my $albumid=$1;
+			my ($sth,$row);
+			$album=GenreMusicDB::Album->get($albumid);
+			}
+
+		if(!$album)
+			{
+			return error500($env);
 			}
 		else
 			{
-			my $album;
-			if($query->{"albumid"})
+			if($query->{"delete"})
 				{
-				my ($sth,$row);
-				$sth=$dbh->prepare("SELECT * FROM albums WHERE albumid=".$dbh->quote($query->{"albumid"}));
-				if(($sth)&&($sth->execute))
+				if(($query->{"confirm"} eq "Yes")&&(($curruser==$album->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
 					{
-					if($row=$sth->fetch)
-						{
-						$album=GenreMusicDB::Album->new(@{$row});
-						}
-					$sth->finish;
+					$dbh->do("DELETE FROM albums WHERE albumid=".$dbh->quote($album->id));
 					}
-				}
-			else
-				{
-				$album=GenreMusicDB::Album->new();
-				}
-			if(!$album)
-				{
-				return error500($env);
+				return [ 302, [ 'Location' => "http://".$env->{"HTTP_HOST"}."${sitepath}albums/",@additionalheaders],[] ];
 				}
 			else
 				{
@@ -137,7 +169,7 @@ sub handle
 				else
 					{
 					$ok=$dbh->do("INSERT INTO albums VALUES (".join(",",map $dbh->quote($_),
-						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0)).")") if($ok);
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? $curruser->id : ""),(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? time : 0))).")") if($ok);
 					$album=GenreMusicDB::Album->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);
 					}
 				my %tags;

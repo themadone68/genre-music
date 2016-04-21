@@ -77,7 +77,7 @@ sub handle
 						{
 						return error401($env);
 						}
-					elsif(!$curruser->has_role("moderator"))
+					elsif(!($curruser->has_role("moderator")||$curruser->has_role("admin")))
 						{
 						return error403($env);
 						}
@@ -93,6 +93,10 @@ sub handle
 					if(!$curruser)
 						{
 						return error401($env);
+						}
+					elsif(!(($curruser==$song->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
+						{
+						return error403($env);
 						}
 					else
 						{
@@ -142,7 +146,7 @@ sub handle
 			{
 			if($query->{"delete"})
 				{
-				if($query->{"confirm"} eq "Yes")
+				if(($query->{"confirm"} eq "Yes")&&(($curruser==$song->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
 					{
 					$dbh->do("DELETE FROM songs WHERE songid=".$dbh->quote($song->id));
 					}
@@ -160,7 +164,7 @@ sub handle
 				else
 					{
 					$ok=$dbh->do("INSERT INTO songs VALUES (".join(",",map $dbh->quote($_),
-						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,($curruser->has_role("moderator") ? $curruser->id : ""),($curruser->has_role("moderator") ? time : 0))).")") if($ok);
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? $curruser->id : ""),(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? time : 0))).")") if($ok);
 					if($ok)
 						{
 						$song=GenreMusicDB::Song->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);

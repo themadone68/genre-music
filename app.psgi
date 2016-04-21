@@ -21,7 +21,7 @@ sub homepage
 	my @newsongs;
 	my $dbh=open_database();
 	
-	if(($curruser)&&($curruser->has_role("moderator")))
+	if(($curruser)&&(($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
 		{
 		foreach my $song (GenreMusicDB::Song->all("WHERE moderated=0"))
 			{

@@ -78,6 +78,39 @@ sub handle
 					{
 					return error401($env);
 					}
+				elsif($query->{"moderate"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					elsif(!($curruser->has_role("moderator")||$curruser->has_role("admin")))
+						{
+						return error403($env);
+						}
+					else
+						{
+						my $dbh=open_database();
+						$dbh->do("UPDATE artists SET moderated=strftime('%s','now'),moderatedby=".$dbh->quote($curruser->id)." WHERE artistid=".$dbh->quote($artist->id));
+						return [ 302, [ 'Location' => $env->{"HTTP_REFERER"},@additionalheaders],[] ];
+						}
+					}
+				elsif($query->{"delete"})
+					{
+					if(!$curruser)
+						{
+						return error401($env);
+						}
+					elsif(!(($curruser==$artist->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
+						{
+						return error403($env);
+						}
+					else
+						{
+						return load_template($env,200,"html","artist_delete","Delete ".$artist->{"name"}."?",
+							{mainmenu => build_mainmenu($env),artist => $artist});
+						}
+					}
 				else
 					{
 					return load_template($env,200,"html","artist",$artist->{"name"},
@@ -119,7 +152,7 @@ sub handle
 			{
 			if($query->{"delete"})
 				{
-				if($query->{"confirm"} eq "Yes")
+				if(($query->{"confirm"} eq "Yes")&&(($curruser==$artist->addedby)||($curruser->has_role("moderator"))||($curruser->has_role("admin"))))
 					{
 					$dbh->do("DELETE FROM artists WHERE artistid=".$dbh->quote($artist->id));
 					}
@@ -137,7 +170,7 @@ sub handle
 				else
 					{
 					$ok=$dbh->do("INSERT INTO artists VALUES (".join(",",map $dbh->quote($_),
-						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,($curruser->has_role("moderator") ? $curruser->id : ""),($curruser->has_role("moderator") ? time : 0))).")") if($ok);
+						(undef,$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? $curruser->id : ""),(($curruser->has_role("moderator")||$curruser->has_role("admin")) ? time : 0))).")") if($ok);
 					if($ok)
 						{
 						$artist=GenreMusicDB::Artist->new($dbh->func('last_insert_rowid'),$query->{"name"},$query->{"description"},$env->{"REMOTE_USER"},time,"",0);

@@ -13,7 +13,7 @@
 <table class="table">
 <tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
 [% FOREACH entity IN results %]
-[% IF entity.moderated || (curruser && curruser.has_role("moderator")) || curruser==entity.addedby %]
+[% IF entity.moderated || (curruser && (curruser.has_role("moderator")||curruser.has_role("admin"))) || curruser==entity.addedby %]
 <tr>
 <td>[% entity.link %]</td>
 <td>[% entity.formatted_added %]</td>

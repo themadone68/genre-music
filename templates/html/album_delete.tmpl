@@ -1,0 +1,11 @@
+[% INCLUDE _header.tmpl %]
+<form class="form-horizontal" method="POST" action="[% IF album %][% album.url %][% ELSE %][% sitepath %]albums/[%END%]">
+<input type="hidden" name="delete" value="1"/>
+<div class="form-group">
+<div class="col-sm-offset-2 col-sm-10">
+<input type="submit" class="btn btn-default" name="confirm" value="Yes"/>
+<input type="submit" class="btn btn-default" name="confirm" value="No"/>
+</div>
+</div>
+</form>
+[% INCLUDE _footer.tmpl %]
