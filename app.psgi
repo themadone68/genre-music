@@ -109,7 +109,7 @@ sub login
 				{
 				my $domain=$env->{"SERVER_NAME"};
 				$domain =~ s%^www\.%.%;
-				my ($sth,$row);
+				my $row;
 				my $password;
 				my $ok=$dbh->do("BEGIN IMMEDIATE");
 				my $sth=$dbh->prepare("SELECT password FROM users WHERE userid=".$dbh->quote($user->id));

@@ -5,12 +5,15 @@ CSS=css/style.css
 PERL=/usr/bin/perl
 PERLLIBS=-Ilib
 
-.SUFFIXES: .css .scss
+.SUFFIXES: .css .scss .t
+.PHONY: tests
 
 all: $(CSS)
 
 tests: $(TEST_FILES)
-	$(PERL) -Tw $(PERLLIBS) $(TEST_FILES)
+	@for X in $(TEST_FILES); do \
+	  $(PERL) -Tw $(PERLLIBS) $$X; \
+	done
 
 %.css: %.scss
 	$(SCSS) $(SCSSFLAGS) $< $@
