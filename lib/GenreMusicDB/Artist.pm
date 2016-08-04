@@ -348,7 +348,7 @@ sub songs
 		$sth=$dbh->prepare("SELECT * FROM songs WHERE songid IN (SELECT songid FROM song_contributors WHERE artistid=".$dbh->quote($self->id).")");
 		if(($sth)&&($sth->execute))
 			{
-			if($row=$sth->fetch)
+			while($row=$sth->fetch)
 				{
 				$self->{"_songs"}->{$row->[0]}=GenreMusicDB::Song->new(@{$row});
 				}
