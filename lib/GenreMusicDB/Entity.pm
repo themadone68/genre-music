@@ -48,4 +48,13 @@ sub formatted_added
 	my $self=shift;
 	return time2str("%Y/%m/%d",$self->added);
 	}
+
+sub type
+	{
+	my $self=shift;
+	my $type=ref($self);
+	$type =~ s/^.*::([^:]+)/$1/;
+	return $type;
+	}
+
 1;

@@ -5,10 +5,11 @@
 <div class="panel-heading"><h2 class="panel-title">Items Awaiting Moderation</h2></div>
 <div class="panel-body">
 <table class="table">
-<tr><th>Name</th><th>Added</th><th>&nbsp;</th></tr>
+<tr><th>Name</th><th>Type</th><th>Added</th><th>&nbsp;</th></tr>
 [% FOREACH entity IN unmoderated %]
 <tr>
 <td>[% entity.link %]</td>
+<td>[% entity.type %]</td>
 <td>[% entity.formatted_added %]</td>
 <td btn-group">
 <a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
