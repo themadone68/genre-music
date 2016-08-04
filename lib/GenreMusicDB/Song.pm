@@ -230,7 +230,7 @@ sub handle
 					$ok=$dbh->do("DELETE FROM song_links WHERE songid=".$dbh->quote($song->id)) if($ok);
 					foreach my $key (keys %{$query})
 						{
-						if($key =~ /^artist_name-(\d+)/)
+						if(($key =~ /^artist_name-(\d+)/)&&($query->param($key) ne ""))
 							{
 							my $id=$1;
 							my $artist;
