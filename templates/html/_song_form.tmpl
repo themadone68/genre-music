@@ -6,7 +6,7 @@ function add_new_row(elem)
     {
     row_parent=row_parent.parentNode;
     }
-  var html="<div>"+$(row_parent).html()+"</div>";
+  var html="<div class='row'>"+$(row_parent).html()+"</div>";
   var this_id;
   this_id=parseInt(elem.name.match(/^.*-([0-9]+)$/)[1]);
   this_id=this_id+1;
