@@ -98,7 +98,7 @@ $.ajax({
       select: function(event,ui)
         {
         var aid=this.name.replace('artist_name','artist_id');
-        $("#"+aid).value=ui.item.id;
+        $("#"+aid).prop('value',ui.item.id);
         add_new_row(this);
         },
       });

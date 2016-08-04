@@ -230,7 +230,7 @@ sub handle
 					$ok=$dbh->do("DELETE FROM song_links WHERE songid=".$dbh->quote($song->id)) if($ok);
 					foreach my $key (keys %{$query})
 						{
-						if(($key =~ /^artist_name-(\d+)/)&&($query->param($key) ne ""))
+						if(($key =~ /^artist_name-(\d+)/)&&($query->get($key) ne ""))
 							{
 							my $id=$1;
 							my $artist;
@@ -252,7 +252,11 @@ sub handle
 								}
 							elsif($query->get("artist_name-$id") ne "")
 								{
-								$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
+								$artist=GenreMusicDB::Artist->get($query->get("artist_named-$id"));
+								if(!$artist)
+									{
+									$artist=GenreMusicDB::Artist->create({name => $query->get("artist_name-$id"),addedby => $env->{"REMOTE_USER"}}) if($ok);
+									}
 								if(!$artist)
 									{
 									push @errors,"Cannot create artist: ".$query->get("artist_name-$id");
