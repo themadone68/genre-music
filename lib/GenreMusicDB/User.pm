@@ -276,10 +276,10 @@ sub handle
 						if(($template->process("templates/text/email_invite.tmpl",$vars,\$text))&&
 							($template->process("templates/html/email_invite.tmpl",$vars,\$html)))
 							{
-							if(open(MAIL,"|/usr/lib/sendmail -t -f postmaster\@thingsilove.org.uk"))
+							if(open(MAIL,"|/usr/lib/sendmail -t -f postmaster\@instituteofcorrection.org.uk"))
 								{
 								my $mimemail = MIME::Entity->build(Type => "multipart/alternative",
-									From => "I Need To Config This <chris\@instituteofcorrection.org.uk>",
+									From => "Genre Music DB <chris\@instituteofcorrection.org.uk>",
 									To => $query->{"name"}." <".$query->{"email"}.">",
 									Subject => "Invitation to the Genre Music Database");
 								$mimemail->attach(Type => "text/plain",
@@ -321,7 +321,7 @@ sub handle
 sub url
 	{
 	my $self=shift;
-	if(!$self->is_temporary)
+	if((!$self->is_temporary)||($curruser->has_role("admin")))
 		{
 		return "${sitepath}users/".cgiencode($self->id).".html";
 		}
@@ -334,7 +334,7 @@ sub url
 sub editurl
 	{
 	my $self=shift;
-	if(!$self->is_temporary)
+	if((!$self->is_temporary)||($self==$curruser)||($curruser->has_role("admin")))
 		{
 		return "${sitepath}users/".cgiencode($self->id).".html?edit=1";
 		}
@@ -477,6 +477,13 @@ sub has_role
 sub formatted_last_login
 	{
 	my $self=shift;
-	return time2str("%Y/%m/%d %H:%M",$self->last_login);
+	if($self->last_login)
+		{
+		return time2str("%Y/%m/%d %H:%M",$self->last_login);
+		}
+	else
+		{
+		return "never";
+		}
 	}
 1;

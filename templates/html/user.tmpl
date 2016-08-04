@@ -1,5 +1,9 @@
 [% INCLUDE _header.tmpl %]
 
+[% IF user==curruser || curruser.has_role('admin') %]
+<p>[% user.email %]</p>
+[% END %]
+
 <h2>Roles</h2>
 <ul>
 [% FOREACH role IN user.roles %]
