@@ -23,9 +23,9 @@ sub handle
 
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
-		if($env->{"PATH_INFO"} =~ m%^/roles/(index\.(html|json))?$%)
+		if($env->{"PATH_INFO"} =~ m%^/roles(/(index\.(html|json))?)?$%)
 			{
-			my $format=$2;
+			my $format=$3;
 			my @roles=GenreMusicDB::Role->all();
 	
 			return load_template($env,200,$format,"role_index","List of Roles",

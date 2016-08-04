@@ -61,9 +61,9 @@ sub handle
 	my $env=shift;
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
-		if($env->{"PATH_INFO"} =~ m%^/tags/(index\.(html|json))?$%)
+		if($env->{"PATH_INFO"} =~ m%^/tags(/(index\.(html|json))?)?$%)
 			{
-			my $format=$2;
+			my $format=$3;
 			my @tags=GenreMusicDB::Tag->all();
 	
 			return load_template($env,200,$format,"tag_index","List of Tags",

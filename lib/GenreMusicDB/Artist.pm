@@ -23,9 +23,9 @@ sub handle
 	my $env=shift;
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
-		if($env->{"PATH_INFO"} =~ m%^/artists/(index\.(html|json))?$%)
+		if($env->{"PATH_INFO"} =~ m%^/artists(/(index\.(html|json))?)?$%)
 			{
-			my $format=$2;
+			my $format=$3;
 			my @artists=GenreMusicDB::Artist->all();
 	
 			return load_template($env,200,$format,"artist_index","List of Artists",

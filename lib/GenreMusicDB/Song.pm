@@ -25,11 +25,10 @@ sub handle
 	my $env=shift;
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
-		if($env->{"PATH_INFO"} =~ m%^/songs/(index\.(html|json))?$%)
+		if($env->{"PATH_INFO"} =~ m%^/songs(/(index\.(html|json))?)?$%)
 			{
-			my $format=$2;
+			my $format=$3;
 			my @songs=GenreMusicDB::Song->all();
-	
 			return load_template($env,200,$format,"song_index","List of Songs",
 				{mainmenu => build_mainmenu($env),songs => \@songs});
 			}

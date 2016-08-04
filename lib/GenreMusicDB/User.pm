@@ -29,10 +29,11 @@ sub handle
 	my $env=shift;
 	if($env->{"REQUEST_METHOD"} ne "POST")
 		{
-		if($env->{"PATH_INFO"} =~ m%^/users/(index\.html)?$%)
+		if($env->{"PATH_INFO"} =~ m%^/users(/(index\.(html|json))?)?$%)
 			{
+			my $format=$3;
 			my @users=GenreMusicDB::User->all();
-			return load_template($env,200,"html","user_index","List of Users",
+			return load_template($env,200,$format,"user_index","List of Users",
 				{mainmenu => build_mainmenu($env),users => \@users});
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/users/new.html$%)
