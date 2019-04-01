@@ -2,14 +2,14 @@
 [% IF role %]<input type="hidden" name="roleid" value="[% role.id %]"/>[% END %]
 <div class="form-group">
 <label for="name" class="col-sm-2 control-label">Name</label>
-<div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="Name of the role" value="[% FILTER htmlencode %][% role.name %][% END %]"/></div>
+<div class="col-sm-10"><input type="text" class="form-control" id="name" name="name" placeholder="Name of the role" value="[% role.name | html_entity %]"/></div>
 </div>
 <div class="form-group">
 <label class="col-sm-2 control-label">Members</label>
 <div class="col-sm-10">
 <select id="members" type="text" class="form-control" name="members" multiple="1">
 [% FOREACH user IN users %]
-<option [% IF role.has_member(user) %]selected="1" [% END %]value="[%FILTER htmlencode%][% user.id %][%END%]">[%FILTER htmlencode%][% user.name %][%END%]</option>
+<option [% IF role.has_member(user) %]selected="1" [% END %]value="[% user.id | html_entity %]">[% user.name | html_entity %]</option>
 [% END %]
 </select>
 <noscript><input type="text" class="form-control" name="members" value=""/></noscript>

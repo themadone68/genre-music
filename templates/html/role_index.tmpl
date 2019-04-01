@@ -3,8 +3,8 @@
 
 <ul>
 [% FOREACH role IN roles %]
-<li><a href="[% role.url %]">[% FILTER htmlencode %][% role.name %][%END%]</a></li>
+<li><a href="[% role.url %]">[% role.name | html_entity %]</a></li>
 [% END %]
 </ul>
-<p><a href="[% FILTER htmlencode %][% sitepath %]roles/new.html[%END%]">Add role</a></p>
+<p><a href="[% FILTER html_entity %][% sitepath %]roles/new.html[%END%]">Add role</a></p>
 [% INCLUDE _footer.tmpl %]

@@ -9,11 +9,11 @@
 <td>[% song.link %]</td>
 <td>[% song.formatted_added %]</td>
 <td>[% IF curruser %]<div class="btn-group">
-<a href="[% FILTER htmlencode %][% song.editurl %][%END%]" class="btn btn-default">Edit</a>
+<a rel="nofollow noindex" href="[% song.editurl | html_entity %]" class="btn btn-default">Edit</a>
 [% IF !song.moderated && (curruser && (curruser.has_role("moderator")||curruser.has_role("admin"))) %]
-<a href="[% FILTER htmlencode %][% song.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% song.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
 [% END %]
-<a href="[% FILTER htmlencode %][% song.url %]?delete=1[%END%]" class="btn btn-default">Delete</a>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% song.url %]?delete=1[%END%]" class="btn btn-default">Delete</a>
 [% END %]</td>
 </tr>
 [% END %]

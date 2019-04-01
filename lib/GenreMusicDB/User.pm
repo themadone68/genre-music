@@ -32,9 +32,23 @@ sub handle
 		if($env->{"PATH_INFO"} =~ m%^/users(/(index\.(html|json))?)?$%)
 			{
 			my $format=$3;
-			my @users=GenreMusicDB::User->all();
-			return load_template($env,200,$format,"user_index","List of Users",
-				{mainmenu => build_mainmenu($env),users => \@users});
+			if($curruser)
+				{
+				if($curruser->has_role("admin"))
+					{
+					my @users=GenreMusicDB::User->all();
+					return load_template($env,200,$format,"user_index","List of Users",
+						{mainmenu => build_mainmenu($env),users => \@users});
+					}
+				else
+					{
+					return error403($env);
+					}
+				}
+			else
+				{
+				return error401($env);
+				}
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/users/new.html$%)
 			{
@@ -82,8 +96,15 @@ sub handle
 					}
 				else
 					{
-					return load_template($env,200,"html","user",$user->name." Profile",
-						{mainmenu => build_mainmenu($env),user => $user});
+					if($curruser)
+						{
+						return load_template($env,200,"html","user",$user->name." Profile",
+							{mainmenu => build_mainmenu($env),user => $user});
+						}
+					else
+						{
+						return error401($env);
+						}
 					}
 				}
 			else

@@ -26,10 +26,24 @@ sub handle
 		if($env->{"PATH_INFO"} =~ m%^/roles(/(index\.(html|json))?)?$%)
 			{
 			my $format=$3;
-			my @roles=GenreMusicDB::Role->all();
+			if($env->{"REMOTE_USER"})
+				{
+				if(($adminrole)&&($adminrole->has_member($env->{"REMOTE_USER"})))
+					{
+					my @roles=GenreMusicDB::Role->all();
 	
-			return load_template($env,200,$format,"role_index","List of Roles",
-				{mainmenu => build_mainmenu($env),roles => \@roles});
+					return load_template($env,200,$format,"role_index","List of Roles",
+						{mainmenu => build_mainmenu($env),roles => \@roles});
+					}
+				else
+					{
+					return error403($env);
+					}
+				}
+			else
+				{
+				return error401($env);
+				}
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/roles/new.html?$%)
 			{
@@ -55,8 +69,8 @@ sub handle
 			}
 		elsif($env->{"PATH_INFO"} =~ m%^/roles/(.*?)(\.html)?$%)
 			{
-			my $role;
 			my $title=$1;
+			my $role;
 			my ($sth,$row);
 			my $dbh=open_database();
 			$sth=$dbh->prepare("SELECT * FROM roles WHERE name LIKE ".$dbh->quote($title));
@@ -94,8 +108,23 @@ sub handle
 					}
 				else
 					{
-					return load_template($env,200,"html","role",$role->{"name"},
-						{mainmenu => build_mainmenu($env),role => $role});
+					if($env->{"REMOTE_USER"})
+						{
+						if((($adminrole)&&($adminrole->has_member($env->{"REMOTE_USER"})))||
+							($role->has_member($env->{"REMOTE_USER"})))
+							{
+							return load_template($env,200,"html","role",$role->{"name"},
+								{mainmenu => build_mainmenu($env),role => $role});
+							}
+						else
+							{
+							return error403($env);
+							}
+						}
+					else
+						{
+						return error401($env);
+						}
 					}
 				}
 			else

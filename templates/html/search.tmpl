@@ -2,7 +2,7 @@
 
 <form class="form-horizontal" method="GET" action="[% sitepath %]search.html">
 <div class="form-group">
-<div class="col-sm-10"><input type="text" class="form-control" id="search" name="search" placeholder="" value="[%FILTER htmlencode %][% search %][%END%]"/></div>
+<div class="col-sm-10"><input type="text" class="form-control" id="search" name="search" placeholder="" value="[% search | html_entity %]"/></div>
 <div class="col-sm-2">
 <button type="submit" class="btn btn-default">Search</button>
 </div>
@@ -18,11 +18,11 @@
 <td>[% entity.link %]</td>
 <td>[% entity.formatted_added %]</td>
 <td btn-group">
-<a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
+<a rel="nofollow noindex" href="[% entity.editurl | html_entity %]" class="btn btn-default">Edit</a>
 [% IF !entity.moderated %]
-<a href="[% FILTER htmlencode %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
 [% END %]
-<a href="[% FILTER htmlencode %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
 </td>
 </tr>
 [% END %]

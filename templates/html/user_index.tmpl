@@ -4,7 +4,7 @@
 <table class="table">
 <tr><th>Name</th><th>Last On</th></tr>
 [% FOREACH user IN users %]
-<tr><td><a href="[% user.url %]">[% FILTER htmlencode %][% user.name %][%END%]</a></td><td>[% user.formatted_last_login %]</td></tr>
+<tr><td><a href="[% user.url %]">[% user.name | html_entity %]</a></td><td>[% user.formatted_last_login %]</td></tr>
 [% END %]
 </table>
 

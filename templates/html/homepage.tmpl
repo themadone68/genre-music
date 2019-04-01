@@ -12,11 +12,11 @@
 <td>[% entity.type %]</td>
 <td>[% entity.formatted_added %]</td>
 <td btn-group">
-<a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
+<a rel="nofollow noindex" href="[% entity.editurl | html_entity %]" class="btn btn-default">Edit</a>
 [% IF !entity.moderated %]
-<a href="[% FILTER htmlencode %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
 [% END %]
-<a href="[% FILTER htmlencode %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
 </td>
 </tr>
 [% END %]
@@ -37,11 +37,11 @@
 <td>[% entity.link %]</td>
 <td>[% entity.formatted_added %]</td>
 <td btn-group">
-<a href="[% FILTER htmlencode %][% entity.editurl %][%END%]" class="btn btn-default">Edit</a>
+<a rel="nofollow noindex" href="[% entity.editurl | html_entity %]" class="btn btn-default">Edit</a>
 [% IF !entity.moderated && (curruser && (curruser.has_role("moderator")||curruser.has_role("admin"))) %]
-<a href="[% FILTER htmlencode %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?moderate=1[%END%]" class="btn btn-default">Moderate</a>
 [% END %]
-<a href="[% FILTER htmlencode %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
+<a rel="nofollow noindex" href="[% FILTER html_entity %][% entity.url %]?delete=1[%END%]" class="btn btn-default">Delete</a></div>
 </td>
 </tr>
 [% END %]

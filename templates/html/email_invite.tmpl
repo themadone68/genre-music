@@ -3,7 +3,7 @@
 <body>
 <p>Hi [% name %]</p>
 
-<p>You have been invited to contribute to the <a href="[% FILTER htmlencode %][% siteurl %]?utm_medium=[%utm_medium%]&utm_source=body&utm_campaign=[%utm_campaign%][%END%]">Genre Music Database</a> by [% FILTER htmlencode %][% otheruser.name %][%END%] ([% FILTER htmlencode %][% otheruser.email %][%END%]).</p>
+<p>You have been invited to contribute to the <a href="[% FILTER html_entity %][% siteurl %]?utm_medium=[%utm_medium%]&utm_source=body&utm_campaign=[%utm_campaign%][%END%]">Genre Music Database</a> by [% otheruser.name | html_entity %] ([% otheruser.email | html_entity %]).</p>
 
 <p>You can log in using your email address and the password &quot;[% password %]&quot;</p>
 

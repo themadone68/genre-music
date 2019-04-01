@@ -5,7 +5,7 @@
 <div class="panel-body">
 <ul class="list-group" style="margin-bottom: 0px;">
 [% FOREACH album IN song.albums %]
-<li class="list-group-item"><a href="[% album.url %]">[% FILTER htmlencode %][% album.name %][%END %]</a></li>
+<li class="list-group-item"><a href="[% album.url %]">[% album.name | html_entity %]</a></li>
 [%END%]
 </ul>
 </div>
@@ -15,7 +15,7 @@
 <div class="panel-body">
 <ul class="list-group" style="margin-bottom: 0px;">
 [% FOREACH artist IN song.artists %]
-<li class="list-group-item"><a href="[% artist.url %]">[% SET notfirst=0 %][% FILTER htmlencode %][% artist.name %][%END %]</a> ([% FOREACH relationship IN song.relationship(artist)%][% IF notfirst %],[%END%][% FILTER htmlencode %][% relationship %][%END%][% SET notfirst=1 %][%END%])</li>
+<li class="list-group-item"><a href="[% artist.url %]">[% SET notfirst=0 %][% artist.name | html_entity %]</a> ([% FOREACH relationship IN song.relationship(artist)%][% IF notfirst %],[%END%][% relationship | html_entity %][% SET notfirst=1 %][%END%])</li>
 [%END%]
 </ul>
 </div>
@@ -26,9 +26,9 @@
 <ul class="list-inline">
 <li><strong>Tags</strong></li>
 [% FOREACH tag IN song.tags %]
-<li><a href="[% tag.url %]">[% FILTER htmlencode %][% tag.name %][% END %]</a></li>
+<li><a href="[% tag.url %]">[% tag.name | html_entity %]</a></li>
 [%END%]
 </ul>
 [%END%]
-<p><a href="[% song.editurl %]">Edit this</a></p>
+<p><a rel="nofollow noindex" href="[% song.editurl %]">Edit this</a></p>
 [% INCLUDE _footer.tmpl %]

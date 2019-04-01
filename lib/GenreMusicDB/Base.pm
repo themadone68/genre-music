@@ -35,8 +35,8 @@ sub load_template
 		INCLUDE_PATH => $filepath."templates/$format",
 		FILTERS =>
 			{
-			"htmlencode" => \&htmlencode,
-			"cgiencode" => \&cgiencode,
+#			"htmlencode" => \&htmlencode,
+#			"cgiencode" => \&cgiencode,
 			"markdown2html" => \&markdown2html,
 			}
 		});
@@ -94,6 +94,7 @@ sub build_mainmenu
 			{ url => "/songs/new.html", name => "Add Song" },
 			{ url => "/users/new.html", name => "Invite" },
 			{ url => "/users/me.html", name => "Profile" },
+			{ url => "/admin.html", name => "Admin" },
 			{ url => "/logout.html", name => "Logout" },
 			);
 		}

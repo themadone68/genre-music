@@ -5,7 +5,7 @@
 </div>
 <div class="col-sm-6">
 <select type="text" class="form-control" name="artist_relationship-[%count%]">[% FOREACH relationship IN ["performer","composer","arrangement"] %]
-<option[%IF artist_relationship==relationship %] selected="1"[%END%] value="[%FILTER htmlencode %][% relationship %][%END%]">[%FILTER htmlencode %][% relationship %][%END%]
+<option[%IF artist_relationship==relationship %] selected="1"[%END%] value="[% relationship | html_entity %]">[% relationship | html_entity %]
 </option>[% END %]
 </select>
 </div>

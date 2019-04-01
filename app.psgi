@@ -53,6 +53,17 @@ sub homepage
 		{mainmenu => build_mainmenu($env),unmoderated => \@unmoderated,newsongs => \@newsongs});
 	}
 
+sub adminpage
+	{
+	my $env=shift;
+	my @unmoderated;
+	my @newsongs;
+	my $dbh=open_database();
+
+	return load_template($env,200,"html","adminpage","Admin",
+		{mainmenu => build_mainmenu($env)});
+	}
+
 sub search
 	{
 	my $env=shift;
@@ -300,6 +311,10 @@ my $app = sub
 	elsif($env->{"PATH_INFO"} =~ m%^/search.html$% )
 		{
 		return search($env);
+		}
+	elsif($env->{"PATH_INFO"} =~ m%^/admin.html$% )
+		{
+		return adminpage($env);
 		}
 	elsif($env->{"PATH_INFO"} =~ m%^/login.html$% )
 		{

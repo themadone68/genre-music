@@ -1,7 +1,7 @@
 [% INCLUDE _header.tmpl %]
-<p>Here are the things tagged with &quot;[% FILTER htmlencode %][% tag.name %][%END%]&quot;</p>
+<p>Here are the things tagged with &quot;[% tag.name | html_entity %]&quot;</p>
 [% FOREACH entity IN entities %]
-<li><a href="[% entity.url %]">[% FILTER htmlencode %][% entity.name %][% END %]</li>
+<li><a href="[% entity.url %]">[% entity.name | html_entity %]</li>
 [%END%]
 </ul>
 [% INCLUDE _footer.tmpl %]

@@ -53,8 +53,8 @@
 <div class="col-sm-10">
 <!--<select id="roles" type="text" class="form-control" name="roles" multiple="1">-->
 [% FOREACH role IN roles %]
-<!--<option[% IF user.has_role(role) %] selected="1"[% END %] value="[%FILTER htmlencode%][% role.id %][%END%]">[%FILTER htmlencode%][% role.name %][%END%]</option>-->
-<input id="roles-[%FILTER htmlencode%][% role.id %][%END%]" type="checkbox"[% IF user.has_role(role) %] checked="1"[% END %] name="roles" value="[%FILTER htmlencode%][% role.id %][%END%]"><label class="control-label" for="roles-[%FILTER htmlencode%][% role.id %][%END%]">[%FILTER htmlencode%][% role.name %][%END%]</label>
+<!--<option[% IF user.has_role(role) %] selected="1"[% END %] value="[% role.id | html_entity %]">[% role.name | html_entity %]</option>-->
+<input id="roles-[% role.id | html_entity %]" type="checkbox"[% IF user.has_role(role) %] checked="1"[% END %] name="roles" value="[% role.id | html_entity %]"><label class="control-label" for="roles-[% role.id | html_entity %]">[% role.name | html_entity %]</label>
 [% END %]
 <!--</select>
 <script>$('#roles').combomultibox();</script>-->

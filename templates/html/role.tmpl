@@ -2,8 +2,8 @@
 <h2>Members</h2>
 <ul>
 [% FOREACH member IN role.members %]
-<li><a href="[% member.url %]">[%FILTER htmlencode %][% member.name %][%END%]</a></li>
+<li><a href="[% member.url %]">[% member.name | html_entity %]</a></li>
 [% END %]
 </ul>
-<p><a href="[% role.editurl %]">Edit this</a></p>
+<p><a rel="nofollow noindex" href="[% role.editurl %]">Edit this</a></p>
 [% INCLUDE _footer.tmpl %]
